@@ -20,9 +20,11 @@ Not everything is handled the same way:
     symlink can't cover both. `herdr/config.toml` is the single source of
     truth and gets **copied to both locations** — Debian's fully customized
     config (theme, keybindings, plugin bindings) plus `[update] channel =
-    "preview"` merged in from what Windows had. `herdr/scripts/herdr-wt`
-    (the worktree helper used by the `lswt`/`crwt`/`openwt`/`rmwt` aliases in
-    `.zshrc`) is Debian/WSL-only and copied to `~/.config/herdr/scripts/`.
+    "preview"` merged in from what Windows had. The `lswt`/`crwt`/`openwt`/`rmwt` worktree helpers exist on both sides as
+    separate implementations: `herdr/scripts/herdr-wt` (bash, aliased from
+    `.zshrc`) on Debian/WSL, and `herdr/scripts/herdr-wt.ps1` +
+    `Microsoft.PowerShell_profile.ps1` (the PowerShell port, dot-sourced from
+    the profile) on Windows.
   - `wezterm` currently only has a config on the Windows side
     (`/mnt/c/Users/iseoane/.wezterm.lua`); it's copied there via the WSL
     `/mnt/c` bridge.
@@ -34,7 +36,10 @@ zsh/.zshrc, .zprofile      -> symlinked to $HOME
 wezterm/.wezterm.lua       -> copied to Windows $HOME (via /mnt/c)
 herdr/config.toml          -> copied to ~/.config/herdr/config.toml AND
                               Windows AppData/Roaming/herdr/config.toml
-herdr/scripts/herdr-wt     -> copied to ~/.config/herdr/scripts/ (Debian/WSL only)
+herdr/scripts/herdr-wt     -> copied to ~/.config/herdr/scripts/ (Debian/WSL)
+herdr/scripts/herdr-wt.ps1,
+Microsoft.PowerShell_profile.ps1
+                           -> copied to Documents/WindowsPowerShell/ (Windows)
 claude/CLAUDE.md
 claude/settings.json
 claude/agents/

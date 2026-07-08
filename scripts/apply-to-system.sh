@@ -38,6 +38,12 @@ if has_windows_mount; then
   echo "== herdr (copy, windows side via /mnt/c) =="
   backup_if_needed "$WIN_HOME/AppData/Roaming/herdr/config.toml"
   copy "$REPO_ROOT/herdr/config.toml" "$WIN_HOME/AppData/Roaming/herdr/config.toml"
+
+  PS_DIR="$WIN_HOME/Documents/WindowsPowerShell"
+  backup_if_needed "$PS_DIR/Scripts/herdr-wt.ps1"
+  copy "$REPO_ROOT/herdr/scripts/herdr-wt.ps1" "$PS_DIR/Scripts/herdr-wt.ps1"
+  backup_if_needed "$PS_DIR/Microsoft.PowerShell_profile.ps1"
+  copy "$REPO_ROOT/herdr/scripts/Microsoft.PowerShell_profile.ps1" "$PS_DIR/Microsoft.PowerShell_profile.ps1"
 else
   echo "== wezterm/herdr(win) skipped: no /mnt/c mount (not running under WSL) =="
 fi

@@ -24,6 +24,12 @@ if has_windows_mount; then
   echo "== wezterm (windows side via /mnt/c) =="
   cp "$WIN_HOME/.wezterm.lua" "$REPO_ROOT/wezterm/.wezterm.lua"
   echo "  synced wezterm/.wezterm.lua"
+
+  echo "== herdr powershell scripts (windows side via /mnt/c) =="
+  PS_DIR="$WIN_HOME/Documents/WindowsPowerShell"
+  cp "$PS_DIR/Scripts/herdr-wt.ps1" "$REPO_ROOT/herdr/scripts/herdr-wt.ps1"
+  cp "$PS_DIR/Microsoft.PowerShell_profile.ps1" "$REPO_ROOT/herdr/scripts/Microsoft.PowerShell_profile.ps1"
+  echo "  synced herdr/scripts/herdr-wt.ps1 and Microsoft.PowerShell_profile.ps1"
 else
   echo "== wezterm skipped: no /mnt/c mount (not running under WSL) =="
 fi
