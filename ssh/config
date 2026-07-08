@@ -1,0 +1,4 @@
+Host ueca
+    HostName 141.95.75.194
+    User ubuntu
+    IdentityFile ~/.ssh/PrivateKeyUECA-26.pem

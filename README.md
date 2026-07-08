@@ -9,6 +9,10 @@ Not everything is handled the same way:
 
 - **zsh** (`.zshrc`, `.zprofile`): pure config, no secrets or runtime state.
   Installed as **symlinks** — edit anywhere, both sides stay in sync.
+- **ssh/config**: only the host aliases (`Host`, `HostName`, `User`,
+  `IdentityFile` pointers), **copied**, never symlinked. Private keys
+  (`*.pem`, `*.ppk`, `id_*`) and `known_hosts` are explicitly gitignored and
+  must never be committed — a git history is forever, even in a private repo.
 - **claude/**, **herdr/**, **wezterm/**: **copied**, not symlinked, via the
   scripts below. Reasons:
   - `~/.claude` mixes real config (`CLAUDE.md`, `agents/`, `commands/`,
@@ -33,6 +37,8 @@ Not everything is handled the same way:
 
 ```
 zsh/.zshrc, .zprofile      -> symlinked to $HOME
+ssh/config                 -> copied to ~/.ssh/config AND Windows .ssh/config
+                              (never keys, never known_hosts)
 wezterm/.wezterm.lua       -> copied to Windows $HOME (via /mnt/c)
 herdr/config.toml          -> copied to ~/.config/herdr/config.toml AND
                               Windows AppData/Roaming/herdr/config.toml

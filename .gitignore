@@ -1,2 +1,10 @@
 .atl/
 *.bak-*
+
+# Never version SSH private keys or host fingerprints, even accidentally.
+*.pem
+*.ppk
+id_rsa*
+id_ed25519*
+id_ecdsa*
+known_hosts*

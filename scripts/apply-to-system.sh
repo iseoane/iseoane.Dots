@@ -11,6 +11,11 @@ echo "== zsh (symlink) =="
 symlink "$REPO_ROOT/zsh/.zshrc" "$HOME/.zshrc"
 symlink "$REPO_ROOT/zsh/.zprofile" "$HOME/.zprofile"
 
+echo "== ssh config (copy, never keys) =="
+backup_if_needed "$HOME/.ssh/config"
+copy "$REPO_ROOT/ssh/config" "$HOME/.ssh/config"
+chmod 600 "$HOME/.ssh/config"
+
 echo "== claude (copy) =="
 backup_if_needed "$HOME/.claude/CLAUDE.md"
 copy "$REPO_ROOT/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
@@ -44,6 +49,10 @@ if has_windows_mount; then
   copy "$REPO_ROOT/herdr/scripts/herdr-wt.ps1" "$PS_DIR/Scripts/herdr-wt.ps1"
   backup_if_needed "$PS_DIR/Microsoft.PowerShell_profile.ps1"
   copy "$REPO_ROOT/herdr/scripts/Microsoft.PowerShell_profile.ps1" "$PS_DIR/Microsoft.PowerShell_profile.ps1"
+
+  echo "== ssh config (copy, windows side via /mnt/c, never keys) =="
+  backup_if_needed "$WIN_HOME/.ssh/config"
+  copy "$REPO_ROOT/ssh/config" "$WIN_HOME/.ssh/config"
 else
   echo "== wezterm/herdr(win) skipped: no /mnt/c mount (not running under WSL) =="
 fi

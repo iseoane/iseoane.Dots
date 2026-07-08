@@ -6,6 +6,10 @@
 # zsh is symlinked, so it never drifts from the repo and isn't handled here.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
+echo "== ssh config (never keys) =="
+cp "$HOME/.ssh/config" "$REPO_ROOT/ssh/config"
+echo "  synced ssh/config"
+
 echo "== claude =="
 cp "$HOME/.claude/CLAUDE.md" "$REPO_ROOT/claude/CLAUDE.md"
 cp "$HOME/.claude/settings.json" "$REPO_ROOT/claude/settings.json"
