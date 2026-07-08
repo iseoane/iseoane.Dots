@@ -17,7 +17,8 @@ echo "  synced claude/"
 
 echo "== herdr (debian/wsl side) =="
 cp "$HOME/.config/herdr/config.toml" "$REPO_ROOT/herdr/config.toml"
-echo "  synced herdr/config.toml"
+cp "$HOME/.config/herdr/scripts/herdr-wt" "$REPO_ROOT/herdr/scripts/herdr-wt"
+echo "  synced herdr/config.toml and herdr/scripts/herdr-wt"
 
 if has_windows_mount; then
   echo "== wezterm (windows side via /mnt/c) =="

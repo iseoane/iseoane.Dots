@@ -1,6 +1,10 @@
 onboarding = false
 # herdr configuration managed by Gentleman.Dots.
 # This file is copied into ~/.config/herdr/config.toml during installation.
+# Shared across Debian/WSL and Windows.
+
+[update]
+channel = "preview"
 
 [theme]
 # Use a built-in dark theme with neutral foregrounds so Herdr does not inherit

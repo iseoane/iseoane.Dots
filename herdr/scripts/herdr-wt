@@ -1,0 +1,364 @@
+#!/usr/bin/env bash
+#
+# herdr-wt — worktree helpers for herdr.
+# Subcommands (aliased in ~/.bashrc):
+#   ls    [repo-path]        list worktrees of the current repo (or given path)
+#   cr    <branch> [base]    create a worktree            (not implemented yet)
+#   open  <branch>           open an existing worktree     (not implemented yet)
+#   rm    <branch>           remove a worktree, with checks (not implemented yet)
+#
+# Requires: herdr, git, jq. Optional: gh (for PR column).
+
+set -euo pipefail
+
+die() { echo "herdr-wt: $*" >&2; exit 1; }
+
+need() { command -v "$1" >/dev/null 2>&1 || die "'$1' not found on PATH"; }
+
+# Resolve the repo top-level from a path (arg) or $PWD.
+# Works from inside the main checkout or any linked worktree.
+resolve_repo() {
+  local start="${1:-$PWD}"
+  git -C "$start" rev-parse --show-toplevel 2>/dev/null \
+    || die "not inside a git repo; cd into one or pass a path (e.g. 'lswt ~/myrepo')"
+}
+
+# owner/repo from origin, for `gh`. Empty if it can't be derived.
+origin_slug() {
+  local repo="$1" url
+  url=$(git -C "$repo" remote get-url origin 2>/dev/null) || { echo ""; return; }
+  echo "$url" | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##'
+}
+
+# Autodetect the base a branch most likely forked from, among develop/main:
+# the candidate with the fewest commits since its merge-base wins.
+# Integration branches themselves (develop/main) return "-".
+detect_from() {
+  local wt="$1" branch="$2"
+  case "$branch" in
+    null) echo "-"; return;;
+    develop|main|master) echo "(base)"; return;;
+  esac
+  local best="" best_ahead=-1 base ref mb ahead
+  for base in develop main master; do
+    ref=""
+    if git -C "$wt" rev-parse --verify --quiet "$base" >/dev/null 2>&1; then ref="$base"
+    elif git -C "$wt" rev-parse --verify --quiet "origin/$base" >/dev/null 2>&1; then ref="origin/$base"
+    else continue; fi
+    mb=$(git -C "$wt" merge-base "$ref" "$branch" 2>/dev/null) || continue
+    ahead=$(git -C "$wt" rev-list --count "$mb".."$branch" 2>/dev/null) || continue
+    if [ "$best_ahead" -lt 0 ] || [ "$ahead" -lt "$best_ahead" ]; then
+      best_ahead="$ahead"; best="$base"
+    fi
+  done
+  echo "${best:--}"
+}
+
+# ahead/behind vs upstream -> "+A/-B", or "-" when no upstream.
+sync_state() {
+  local wt="$1"
+  local up; up=$(git -C "$wt" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null) || { echo "local-only"; return; }
+  [ -n "$up" ] || { echo "local-only"; return; }
+  local counts a b
+  counts=$(git -C "$wt" rev-list --left-right --count "${up}...HEAD" 2>/dev/null) || { echo "local-only"; return; }
+  b=$(echo "$counts" | awk '{print $1}'); a=$(echo "$counts" | awk '{print $2}')
+  if   [ "$a" = "0" ] && [ "$b" = "0" ]; then echo "synced"
+  elif [ "$b" = "0" ];                    then echo "ahead $a"
+  elif [ "$a" = "0" ];                    then echo "behind $b"
+  else                                         echo "ahead $a, behind $b"; fi
+}
+
+wt_ls() {
+  need herdr; need git; need jq
+  local repo; repo=$(resolve_repo "${1:-}")
+  local cur_top; cur_top=$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || echo "")
+
+  # Build a PR lookup (branch -> "#N STATE"), single gh call. Optional.
+  declare -A PRMAP=()
+  if command -v gh >/dev/null 2>&1; then
+    local slug; slug=$(origin_slug "$repo")
+    if [ -n "$slug" ]; then
+      while IFS=$'\t' read -r h n s; do
+        [ -n "$h" ] && PRMAP["$h"]="#$n $s"
+      done < <(gh pr list --repo "$slug" --state all --limit 200 \
+                 --json number,state,headRefName \
+                 --jq 'sort_by(.number)[] | [.headRefName,.number,.state] | @tsv' 2>/dev/null)
+    fi
+  fi
+
+  local json; json=$(herdr worktree list --cwd "$repo" --json 2>/dev/null) \
+    || die "herdr worktree list failed (is the server running?)"
+
+  # Colors only when writing to an interactive terminal (never in pipes/files).
+  local BOLD="" RED="" BRED="" RST=""
+  if [ -t 1 ]; then BOLD=$'\033[1m'; RED=$'\033[31m'; BRED=$'\033[1;31m'; RST=$'\033[0m'; fi
+
+  {
+    printf '\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "BRANCH" "FROM" "HEAD" "STATE" "SYNC" "PR" "WS" "PATH"
+    echo "$json" | jq -r --arg h "$HOME/.herdr/worktrees/" \
+        '.result.worktrees[]?
+         | select((.is_linked_worktree | not) or (.path | startswith($h)))
+         | [ (.branch // "null"), .path, (.open_workspace_id // "none") ] | @tsv' \
+    | while IFS=$'\t' read -r branch path ws; do
+        local disp_branch="$branch" from head state sync pr mark display_path
+        [ "$branch" = "null" ] && disp_branch="(detached)"
+        from=$(detect_from "$path" "$branch")
+        head=$(git -C "$path" rev-parse --short HEAD 2>/dev/null || echo "-")
+        if [ -n "$(git -C "$path" status --porcelain 2>/dev/null)" ]; then state="dirty"; else state="clean"; fi
+        sync=$(sync_state "$path")
+        pr="${PRMAP[$branch]:-none}"
+        mark=""; [ -n "$cur_top" ] && [ "$path" = "$cur_top" ] && mark="*"
+        display_path="${path/#$HOME/\~}"
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+          "$mark" "$disp_branch" "$from" "$head" "$state" "$sync" "$pr" "$ws" "$display_path"
+      done
+  } | awk -F'\t' -v BOLD="$BOLD" -v RED="$RED" -v BRED="$BRED" -v RST="$RST" '
+      # Pass 1: store cells, track max width per column (plain text, no color).
+      { for (i=1;i<=NF;i++){ cell[NR,i]=$i; if (length($i)>w[i]) w[i]=length($i) }
+        if (NF>maxnf) maxnf=NF; nr=NR }
+      END {
+        for (r=1;r<=nr;r++){
+          isrow = (r>1)                             # r==1 is the header
+          bold  = (isrow && cell[r,1]=="*") ? 1 : 0 # current worktree row
+          line=""
+          for (i=1;i<=maxnf;i++){
+            val = cell[r,i]
+            attn = 0
+            if (isrow){
+              if      (i==5 && val ~ /dirty/)          attn=1   # STATE
+              else if (i==6 && val ~ /^(ahead|behind)/) attn=1  # SYNC
+              else if (i==7 && val ~ /OPEN/)           attn=1   # PR
+            }
+            pad = sprintf("%-*s", w[i], val)          # padding on plain text -> stays aligned
+            col = ""
+            if      (attn && bold) col=BRED
+            else if (attn)         col=RED
+            else if (bold)         col=BOLD
+            line = line (col=="" ? pad : col pad RST) "  "
+          }
+          sub(/ +$/,"",line); print line
+        }
+      }'
+
+  echo
+  echo "Legend:"
+  echo "  *          the worktree you are currently in"
+  echo "  FROM       branch it was created from   ((base) = integration branch, e.g. develop/main)"
+  echo "  STATE      clean = no local changes  |  dirty = uncommitted changes"
+  echo "  SYNC       vs its remote upstream: synced | ahead N | behind N | ahead N, behind M"
+  echo "             local-only = branch never pushed (no upstream to compare against)"
+  echo "  PR         GitHub pull request state (none = no PR for this branch)"
+  echo "  WS         open herdr workspace id (none = no workspace open for it)"
+}
+
+# Interactive picker: list local branches, mark the current one, return choice on stdout.
+choose_branch() {
+  local repo="$1"
+  local current; current=$(git -C "$PWD" branch --show-current 2>/dev/null || echo "")
+  local -a branches=()
+  while IFS= read -r b; do branches+=("$b"); done \
+    < <(git -C "$repo" for-each-ref --format='%(refname:short)' refs/heads/ | sort)
+  [ "${#branches[@]}" -gt 0 ] || return 1
+  local i=1 def=1 b mark
+  echo "From which branch?" >&2
+  for b in "${branches[@]}"; do
+    mark=""; [ "$b" = "$current" ] && { mark="  (current) *"; def=$i; }
+    printf "  %d) %s%s\n" "$i" "$b" "$mark" >&2
+    i=$((i+1))
+  done
+  local sel
+  read -rp "#? [$def] " sel </dev/tty || return 1
+  [ -z "$sel" ] && sel="$def"
+  [[ "$sel" =~ ^[0-9]+$ ]] && [ "$sel" -ge 1 ] && [ "$sel" -le "${#branches[@]}" ] || return 1
+  echo "${branches[$((sel-1))]}"
+}
+
+wt_cr() {
+  need herdr; need git; need jq
+  local focus="--focus"
+  local -a pos=()
+  local a
+  for a in "$@"; do
+    case "$a" in
+      --no-focus) focus="--no-focus";;
+      --focus)    focus="--focus";;
+      -*) die "unknown flag '$a'";;
+      *)  pos+=("$a");;
+    esac
+  done
+  local name="${pos[0]:-}" from="${pos[1]:-}"
+  [ -n "$name" ] || die "usage: crwt <name> [branch]   (name is required)"
+
+  local repo; repo=$(resolve_repo)
+
+  # Refuse to clobber an existing branch — that's openwt's job.
+  if git -C "$repo" show-ref --verify --quiet "refs/heads/$name"; then
+    die "branch '$name' already exists — use 'openwt $name' to open its worktree"
+  fi
+
+  # Pick the source branch interactively when not given.
+  if [ -z "$from" ]; then
+    from=$(choose_branch "$repo") || die "no source branch selected; aborted"
+  fi
+  git -C "$repo" show-ref --verify --quiet "refs/heads/$from" \
+    || git -C "$repo" show-ref --verify --quiet "refs/remotes/origin/$from" \
+    || die "source branch '$from' not found (local or origin/)"
+
+  # Always start from the latest: fetch the source branch and fork from origin/<from>.
+  # Fall back to the local ref if there is no remote branch or the network is down.
+  local baseref="$from"
+  if git -C "$repo" fetch origin "$from" >/dev/null 2>&1; then
+    baseref="origin/$from"
+    echo "Fetched latest origin/$from."
+  else
+    echo "note: could not fetch origin/$from; starting from local '$from'." >&2
+  fi
+
+  local out
+  out=$(herdr worktree create --cwd "$repo" --branch "$name" --base "$baseref" "$focus" --json 2>&1) \
+    || die "worktree create failed: $out"
+  local path; path=$(echo "$out" | jq -r '.result.worktree.path // "?"')
+  echo "Created worktree '$name' from '$from'  ->  ${path/#$HOME/\~}"
+}
+
+wt_open() {
+  need herdr; need git; need jq
+  local focus="--focus"
+  local -a pos=()
+  local a
+  for a in "$@"; do
+    case "$a" in
+      --no-focus) focus="--no-focus";;
+      --focus)    focus="--focus";;
+      -*) die "unknown flag '$a'";;
+      *)  pos+=("$a");;
+    esac
+  done
+  local branch="${pos[0]:-}"
+  [ -n "$branch" ] || die "usage: openwt <branch>"
+  local repo; repo=$(resolve_repo)
+
+  local out
+  out=$(herdr worktree open --cwd "$repo" --branch "$branch" "$focus" --json 2>&1) || true
+  if echo "$out" | grep -q 'worktree_not_found'; then
+    die "no worktree for branch '$branch' — create it with 'crwt $branch'"
+  fi
+  echo "$out" | jq -e '.result' >/dev/null 2>&1 || die "open failed: $out"
+  local ws path
+  ws=$(echo "$out" | jq -r '.result.workspace.workspace_id // .result.worktree.open_workspace_id // "?"')
+  path=$(echo "$out" | jq -r '.result.worktree.path // "?"')
+  echo "Opened worktree '$branch' (workspace $ws)  ->  ${path/#$HOME/\~}"
+}
+
+wt_rm() {
+  need herdr; need git; need jq
+  local force=0
+  local -a pos=()
+  local a
+  for a in "$@"; do
+    case "$a" in
+      --force|-f) force=1;;
+      -*) die "unknown flag '$a'";;
+      *)  pos+=("$a");;
+    esac
+  done
+  local branch="${pos[0]:-}"
+  [ -n "$branch" ] || die "usage: rmwt <branch> [--force]"
+  local repo; repo=$(resolve_repo)
+
+  case "$branch" in
+    develop|main|master) die "refusing to remove integration branch '$branch'";;
+  esac
+  local current; current=$(git -C "$PWD" branch --show-current 2>/dev/null || echo "")
+  [ "$branch" = "$current" ] && die "you're currently on '$branch'; switch away first"
+
+  # Locate the worktree.
+  local json; json=$(herdr worktree list --cwd "$repo" --json 2>/dev/null) || die "worktree list failed"
+  local path ws islinked
+  path=$(echo "$json" | jq -r --arg b "$branch" '.result.worktrees[]?|select(.branch==$b)|.path' | head -1)
+  [ -n "$path" ] || die "no worktree for branch '$branch'"
+  ws=$(echo "$json" | jq -r --arg b "$branch" '.result.worktrees[]?|select(.branch==$b)|(.open_workspace_id // "-")' | head -1)
+  islinked=$(echo "$json" | jq -r --arg b "$branch" '.result.worktrees[]?|select(.branch==$b)|.is_linked_worktree' | head -1)
+  [ "$islinked" = "true" ] || die "'$branch' is the main checkout, not a removable worktree"
+
+  # State: merged into detected base? open PR? dirty?
+  local base baseref="" merged="unknown"
+  base=$(detect_from "$path" "$branch")
+  if [ "$base" != "-" ]; then
+    if git -C "$path" rev-parse --verify --quiet "$base" >/dev/null 2>&1; then baseref="$base"
+    elif git -C "$path" rev-parse --verify --quiet "origin/$base" >/dev/null 2>&1; then baseref="origin/$base"; fi
+    if [ -n "$baseref" ] && git -C "$path" merge-base --is-ancestor "$branch" "$baseref" 2>/dev/null; then
+      merged="yes"; else merged="no"; fi
+  fi
+  local pr="-"
+  if command -v gh >/dev/null 2>&1; then
+    local slug; slug=$(origin_slug "$repo")
+    [ -n "$slug" ] && pr=$(gh pr list --repo "$slug" --head "$branch" --state all --limit 1 \
+      --json number,state --jq 'if length>0 then "#\(.[0].number) \(.[0].state)" else "-" end' 2>/dev/null || echo "-")
+    [ -z "$pr" ] && pr="-"
+  fi
+  local dirty="no"; [ -n "$(git -C "$path" status --porcelain 2>/dev/null)" ] && dirty="yes"
+
+  echo "Worktree:  $branch  ->  ${path/#$HOME/\~}"
+  echo "Merged:    $merged${baseref:+ (into $baseref)}"
+  echo "PR:        $pr"
+  echo "Dirty:     $dirty"
+
+  # Blocking conditions unless --force.
+  local blocked=""
+  [ "$merged" = "no" ] && blocked+="not merged; "
+  echo "$pr" | grep -q "OPEN" && blocked+="open PR; "
+  [ "$dirty" = "yes" ] && blocked+="uncommitted changes; "
+  if [ -n "$blocked" ] && [ "$force" -ne 1 ]; then
+    die "refusing to remove (${blocked%; }) — pass --force to override"
+  fi
+
+  if [ "$force" -ne 1 ]; then
+    local ans; read -rp "Remove this worktree? [y/N] " ans </dev/tty || die "aborted"
+    case "$ans" in y|Y|yes|YES) ;; *) die "aborted";; esac
+  fi
+
+  # Remove the worktree (close workspace if any; fall back to git for headless ones).
+  [ "$ws" != "-" ] && herdr worktree remove --workspace "$ws" --force >/dev/null 2>&1 || true
+  if git -C "$repo" worktree list --porcelain 2>/dev/null | grep -qF "worktree $path"; then
+    if [ "$force" -eq 1 ]; then git -C "$repo" worktree remove --force "$path" 2>/dev/null || true
+    else git -C "$repo" worktree remove "$path" 2>/dev/null || true; fi
+  fi
+  git -C "$repo" worktree prune 2>/dev/null || true
+  echo "Removed worktree '$branch'."
+
+  # Local branch: safe -d when merged; -D only with --force when not merged.
+  if [ "$merged" = "yes" ]; then
+    if [ "$force" -eq 1 ]; then
+      git -C "$repo" branch -d "$branch" 2>/dev/null && echo "Deleted merged branch '$branch'."
+    else
+      local ans2=n; read -rp "Also delete local branch '$branch' (merged)? [y/N] " ans2 </dev/tty || ans2=n
+      case "$ans2" in y|Y|yes|YES) git -C "$repo" branch -d "$branch" && echo "Deleted branch '$branch'.";; esac
+    fi
+  elif [ "$force" -eq 1 ]; then
+    git -C "$repo" branch -D "$branch" 2>/dev/null && echo "Force-deleted unmerged branch '$branch'."
+  else
+    echo "Kept local branch '$branch'."
+  fi
+}
+
+usage() {
+  cat >&2 <<EOF
+herdr-wt <subcommand>
+  ls   [repo-path]       list worktrees (current repo or given path)
+  cr   <branch> [base]   create worktree            (coming soon)
+  open <branch>          open existing worktree      (coming soon)
+  rm   <branch>          remove worktree with checks (coming soon)
+EOF
+  exit 1
+}
+
+cmd="${1:-}"; [ $# -gt 0 ] && shift || true
+case "$cmd" in
+  ls)   wt_ls "$@" ;;
+  cr)   wt_cr "$@" ;;
+  open) wt_open "$@" ;;
+  rm)   wt_rm "$@" ;;
+  ""|-h|--help) usage ;;
+  *) die "unknown subcommand '$cmd' (try: ls, cr, open, rm)" ;;
+esac

@@ -15,10 +15,14 @@ Not everything is handled the same way:
     `skills/`, `settings.json`) with runtime/secrets (`.credentials.json`,
     logs, sockets, caches). Symlinking the whole directory would leak
     credentials into git. Only the config subset is versioned.
-  - `herdr` has a different install layout on Windows (binary + installer
-    state) vs Debian/WSL (`config.toml` + sockets). There's no single file
-    both sides share, so only the Debian `config.toml` is versioned; syncing
-    across OS is a copy operation, not a link.
+  - `herdr` config lives at different paths per OS (`~/.config/herdr/config.toml`
+    on Debian/WSL, `AppData/Roaming/herdr/config.toml` on Windows), so a
+    symlink can't cover both. `herdr/config.toml` is the single source of
+    truth and gets **copied to both locations** — Debian's fully customized
+    config (theme, keybindings, plugin bindings) plus `[update] channel =
+    "preview"` merged in from what Windows had. `herdr/scripts/herdr-wt`
+    (the worktree helper used by the `lswt`/`crwt`/`openwt`/`rmwt` aliases in
+    `.zshrc`) is Debian/WSL-only and copied to `~/.config/herdr/scripts/`.
   - `wezterm` currently only has a config on the Windows side
     (`/mnt/c/Users/iseoane/.wezterm.lua`); it's copied there via the WSL
     `/mnt/c` bridge.
@@ -28,7 +32,9 @@ Not everything is handled the same way:
 ```
 zsh/.zshrc, .zprofile      -> symlinked to $HOME
 wezterm/.wezterm.lua       -> copied to Windows $HOME (via /mnt/c)
-herdr/config.toml          -> copied to ~/.config/herdr/config.toml
+herdr/config.toml          -> copied to ~/.config/herdr/config.toml AND
+                              Windows AppData/Roaming/herdr/config.toml
+herdr/scripts/herdr-wt     -> copied to ~/.config/herdr/scripts/ (Debian/WSL only)
 claude/CLAUDE.md
 claude/settings.json
 claude/agents/

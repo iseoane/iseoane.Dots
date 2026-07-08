@@ -26,13 +26,20 @@ copy "$REPO_ROOT/claude/skills" "$HOME/.claude/skills"
 echo "== herdr (copy, debian/wsl side) =="
 backup_if_needed "$HOME/.config/herdr/config.toml"
 copy "$REPO_ROOT/herdr/config.toml" "$HOME/.config/herdr/config.toml"
+backup_if_needed "$HOME/.config/herdr/scripts/herdr-wt"
+copy "$REPO_ROOT/herdr/scripts/herdr-wt" "$HOME/.config/herdr/scripts/herdr-wt"
+chmod +x "$HOME/.config/herdr/scripts/herdr-wt"
 
 if has_windows_mount; then
   echo "== wezterm (copy, windows side via /mnt/c) =="
   backup_if_needed "$WIN_HOME/.wezterm.lua"
   copy "$REPO_ROOT/wezterm/.wezterm.lua" "$WIN_HOME/.wezterm.lua"
+
+  echo "== herdr (copy, windows side via /mnt/c) =="
+  backup_if_needed "$WIN_HOME/AppData/Roaming/herdr/config.toml"
+  copy "$REPO_ROOT/herdr/config.toml" "$WIN_HOME/AppData/Roaming/herdr/config.toml"
 else
-  echo "== wezterm skipped: no /mnt/c mount (not running under WSL) =="
+  echo "== wezterm/herdr(win) skipped: no /mnt/c mount (not running under WSL) =="
 fi
 
 echo "Done."
