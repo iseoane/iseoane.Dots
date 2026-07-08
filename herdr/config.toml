@@ -1,0 +1,68 @@
+onboarding = false
+# herdr configuration managed by Gentleman.Dots.
+# This file is copied into ~/.config/herdr/config.toml during installation.
+
+[theme]
+# Use a built-in dark theme with neutral foregrounds so Herdr does not inherit
+# Ghostty bright-black selected rows or Kanagawa's warm/yellow label text.
+name = "catppuccin"
+
+auto_switch = false
+
+# ── Color preset: CATPPUCCIN MOCHA (ACTIVE) ──────────────────────
+# herdr chrome follows the built-in catppuccin (mocha) theme; no overrides.
+#
+# GENTLEMAN preset (to switch: set name = "one-dark" above and uncomment):
+# [theme.custom]
+# panel_bg = "#06080f"
+# accent = "#6FA0AF"
+# green = "#B7CC85"
+# blue = "#6FA0AF"
+# red = "#CB7C94"
+# yellow = "#DEBA87"
+
+[ui]
+# accent = "#6FA0AF"  # GENTLEMAN preset only
+
+show_agent_labels_on_pane_borders = true
+agent_panel_sort = "priority"
+[keys]
+# Match tmux/Zellij-style prefix muscle memory.
+prefix = "ctrl+a"
+
+# Move between agents in the sidebar.
+# Avoid Herdr's built-in prefix+shift+j/k pane-swap bindings.
+previous_agent = "prefix+alt+k"
+next_agent = "prefix+alt+j"
+
+# Jump straight to agent N (1..9) as listed in the sidebar.
+# Use Ctrl after the prefix: Alt+number is owned by skhd/yabai spaces,
+# and Shift+number did not reach Herdr reliably in the current terminal setup.
+focus_agent = "prefix+ctrl+1..9"
+
+# Open the herdr-plus Projects picker (fuzzy browser of layouts).
+# Pick a project and herdr-plus builds its whole workspace on demand.
+[[keys.command]]
+key = "prefix+alt+p"
+type = "plugin_action"
+command = "cloudmanic.herdr-plus.projects"
+description = "herdr-plus: projects"
+
+# Toggle the reviewr code-review sidebar (diffs + line comments + PR tab).
+# Its default binding is cmd+r (macOS only), so we bind our own here.
+[[keys.command]]
+key = "prefix+alt+r"
+type = "plugin_action"
+command = "persiyanov.reviewr.toggle"
+description = "reviewr: toggle review sidebar"
+
+# Open the focused pane's branch PR in the browser (gh-pr).
+# The sidebar PR-status label updates automatically on pane focus / worktree open.
+[[keys.command]]
+key = "prefix+alt+o"
+type = "plugin_action"
+command = "gh-pr.open-pr"
+description = "gh-pr: open PR in browser"
+
+[ui.toast]
+delivery = "herdr"
