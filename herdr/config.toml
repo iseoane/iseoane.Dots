@@ -4,7 +4,7 @@ onboarding = false
 # Shared across Debian/WSL and Windows.
 
 [update]
-channel = "preview"
+channel = "stable"
 
 [theme]
 # Use a built-in dark theme with neutral foregrounds so Herdr does not inherit

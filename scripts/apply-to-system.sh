@@ -43,6 +43,9 @@ if has_windows_mount; then
   echo "== herdr (copy, windows side via /mnt/c) =="
   backup_if_needed "$WIN_HOME/AppData/Roaming/herdr/config.toml"
   copy "$REPO_ROOT/herdr/config.toml" "$WIN_HOME/AppData/Roaming/herdr/config.toml"
+  # Windows builds are preview-only for now (`herdr update` refuses on stable),
+  # so force the channel back to preview on this side regardless of the repo value.
+  sed -i 's/^channel = "stable"$/channel = "preview"/' "$WIN_HOME/AppData/Roaming/herdr/config.toml"
 
   PS_DIR="$WIN_HOME/Documents/WindowsPowerShell"
   backup_if_needed "$PS_DIR/Scripts/herdr-wt.ps1"

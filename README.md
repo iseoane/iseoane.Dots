@@ -23,8 +23,16 @@ Not everything is handled the same way:
     on Debian/WSL, `AppData/Roaming/herdr/config.toml` on Windows), so a
     symlink can't cover both. `herdr/config.toml` is the single source of
     truth and gets **copied to both locations** — Debian's fully customized
-    config (theme, keybindings, plugin bindings) plus `[update] channel =
-    "preview"` merged in from what Windows had. The `lswt`/`crwt`/`openwt`/`rmwt` worktree helpers exist on both sides as
+    config (theme, keybindings, plugin bindings) plus `[update]`.
+  - **Exception**: `[update] channel` diverges by OS. The repo file (and
+    Debian/WSL) use `channel = "stable"`. Windows herdr builds are
+    preview-only for now — `herdr update` on Windows refuses with
+    `Windows builds are preview-only for now; run 'herdr channel set preview'`
+    if the channel is `stable`. `apply-to-system.sh` accounts for this: after
+    copying `herdr/config.toml` to the Windows path, it force-rewrites the
+    channel line back to `preview` on that side only. `sync-from-system.sh`
+    does not pull the Windows config back, so this override never leaks into
+    the repo. Revisit once Windows gets stable builds. The `lswt`/`crwt`/`openwt`/`rmwt` worktree helpers exist on both sides as
     separate implementations: `herdr/scripts/herdr-wt` (bash, aliased from
     `.zshrc`) on Debian/WSL, and `herdr/scripts/herdr-wt.ps1` +
     `Microsoft.PowerShell_profile.ps1` (the PowerShell port, dot-sourced from
