@@ -49,7 +49,13 @@ herdr/scripts/Microsoft.PowerShell_profile.ps1
 powershell/Microsoft.PowerShell_profile.ps1
                            -> copied to Documents/PowerShell/ (PS 7)
 claude/CLAUDE.md, settings.json,
-agents/, commands/, skills/ -> copied into ~/.claude/
+agents/, commands/, skills/,
+statusline.sh, subagent-statusline.sh
+                           -> copied into ~/.claude/ (Debian/WSL)
+claude/settings.windows.json,
+statusline.ps1, subagent-statusline.ps1
+                           -> copied into Windows .claude/ (via /mnt/c);
+                              settings.windows.json lands as settings.json
 ```
 
 `claude/settings.local.json` is intentionally NOT versioned — it holds
@@ -66,7 +72,12 @@ machine-local overrides per Claude Code convention.
 - **claude/**: **copied**. `~/.claude` mixes real config with
   runtime/secrets (`.credentials.json`, logs, sockets, caches); symlinking
   the whole directory would leak credentials into git. Only the config
-  subset is versioned.
+  subset is versioned. `settings.json` can't be shared across OSes (shell,
+  hook commands, and statusline paths differ), so there are two:
+  `claude/settings.json` (Debian/WSL, bash statuslines) and
+  `claude/settings.windows.json` (Windows, pwsh statuslines and
+  node-guarded gitnexus hooks). Each side's statusline scripts are
+  versioned next to them.
 - **herdr/**, **wezterm/**, **powershell/**: **copied** — they live at
   different paths per OS (or only exist on one side), so a symlink can't
   cover both. Details below.

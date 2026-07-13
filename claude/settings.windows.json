@@ -1,0 +1,175 @@
+{
+  "autoUpdatesChannel": "latest",
+  "editorMode": "normal",
+  "effortLevel": "medium",
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true,
+    "engram@engram": true,
+    "warp@claude-code-warp": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-code-warp": {
+      "source": {
+        "repo": "warpdotdev/claude-code-warp",
+        "source": "github"
+      }
+    },
+    "engram": {
+      "source": {
+        "repo": "Gentleman-Programming/engram",
+        "source": "github"
+      }
+    }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"C:/Users/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
+            "statusMessage": "Checking GitNexus index freshness...",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"C:/Users/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
+            "statusMessage": "Enriching with GitNexus graph context...",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Grep|Glob|Bash"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "pwsh -NoProfile -File C:/Users/iseoane/.engram-sync/sync.ps1 push",
+            "timeout": 120,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "pwsh -NoProfile -File C:/Users/iseoane/.engram-sync/sync.ps1 pull",
+            "timeout": 120,
+            "type": "command"
+          }
+        ],
+        "matcher": "startup|resume"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "pwsh -NoProfile -File C:/Users/iseoane/.engram-sync/sync.ps1 push",
+            "timeout": 60,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "gentle-ai skill-registry refresh --quiet --no-gitignore --cwd \"${CLAUDE_PROJECT_DIR:-$PWD}\" || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      },
+      {
+        "hooks": [
+          {
+            "command": "codegraph prompt-hook",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
+  "inputNeededNotifEnabled": false,
+  "language": "Spanish",
+  "mcpServers": {
+    "context7": {
+      "args": [
+        "-y",
+        "--package=@upstash/context7-mcp@2.2.5",
+        "--",
+        "context7-mcp"
+      ],
+      "command": "npx"
+    }
+  },
+  "model": "claude-fable-5[1m]",
+  "outputStyle": "Neutral",
+  "permissions": {
+    "allow": [
+      "mcp__codegraph__*"
+    ],
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(sudo rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(sudo rm -rf ~)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Read(.ssh/*)",
+      "Edit(.ssh/*)",
+      "Read(.credentials/*)",
+      "Edit(.credentials/*)",
+      "Read(Library/Keychains/*)",
+      "Edit(Library/Keychains/*)",
+      "Read(.aws/credentials)",
+      "Edit(.aws/credentials)",
+      "Read(.config/gh/hosts.yml)",
+      "Edit(.config/gh/hosts.yml)",
+      "Read(**/*.pem)",
+      "Edit(**/*.pem)",
+      "Read(**/*.key)",
+      "Edit(**/*.key)",
+      "Read(**/secrets/*)",
+      "Edit(**/secrets/*)"
+    ]
+  },
+  "remoteControlAtStartup": true,
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "command": "pwsh -NoProfile -File C:/Users/iseoane/.claude/statusline.ps1",
+    "padding": 0,
+    "refreshInterval": 30,
+    "type": "command"
+  },
+  "subagentStatusLine": {
+    "command": "pwsh -NoProfile -File C:/Users/iseoane/.claude/subagent-statusline.ps1",
+    "type": "command"
+  },
+  "theme": "dark",
+  "tui": "fullscreen",
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
+  },
+  "voiceEnabled": true,
+  "workflowKeywordTriggerEnabled": false,
+  "worktree": {
+    "baseRef": "head"
+  }
+}

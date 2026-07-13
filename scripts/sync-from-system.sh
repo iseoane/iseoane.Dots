@@ -13,6 +13,8 @@ echo "  synced ssh/config"
 echo "== claude =="
 cp "$HOME/.claude/CLAUDE.md" "$REPO_ROOT/claude/CLAUDE.md"
 cp "$HOME/.claude/settings.json" "$REPO_ROOT/claude/settings.json"
+cp "$HOME/.claude/statusline.sh" "$REPO_ROOT/claude/statusline.sh"
+cp "$HOME/.claude/subagent-statusline.sh" "$REPO_ROOT/claude/subagent-statusline.sh"
 rm -rf "$REPO_ROOT/claude/agents" "$REPO_ROOT/claude/commands" "$REPO_ROOT/claude/skills"
 cp -r "$HOME/.claude/agents" "$REPO_ROOT/claude/agents"
 cp -r "$HOME/.claude/commands" "$REPO_ROOT/claude/commands"
@@ -41,6 +43,12 @@ if has_windows_mount; then
   echo "== powershell 7 profile (windows side via /mnt/c) =="
   cp "$PS7_DIR/Microsoft.PowerShell_profile.ps1" "$REPO_ROOT/powershell/Microsoft.PowerShell_profile.ps1"
   echo "  synced powershell/Microsoft.PowerShell_profile.ps1"
+
+  echo "== claude (windows side via /mnt/c) =="
+  cp "$WIN_HOME/.claude/settings.json" "$REPO_ROOT/claude/settings.windows.json"
+  cp "$WIN_HOME/.claude/statusline.ps1" "$REPO_ROOT/claude/statusline.ps1"
+  cp "$WIN_HOME/.claude/subagent-statusline.ps1" "$REPO_ROOT/claude/subagent-statusline.ps1"
+  echo "  synced claude/settings.windows.json and windows statuslines"
 else
   echo "== wezterm skipped: no /mnt/c mount (not running under WSL) =="
 fi
