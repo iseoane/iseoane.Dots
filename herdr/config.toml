@@ -70,3 +70,13 @@ description = "gh-pr: open PR in browser"
 
 [ui.toast]
 delivery = "herdr"
+
+# ── WINDOWS ONLY — uncomment after copying this file to %APPDATA%\herdr ──
+# Without this, herdr panes on Windows spawn Windows PowerShell 5.1 (no
+# Starship, no PSReadLine predictions, no profile shims). PS7 is installed
+# from the MSI package (machine PATH, stable install dir); the full path keeps
+# pane spawning independent of the server's inherited PATH. Do NOT enable on
+# Debian/WSL: the path doesn't exist there and panes would fail to spawn
+# ($SHELL/zsh is already the default).
+# [terminal]
+# default_shell = 'C:\Program Files\PowerShell\7\pwsh.exe'

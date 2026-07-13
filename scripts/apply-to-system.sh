@@ -46,12 +46,33 @@ if has_windows_mount; then
   # Windows builds are preview-only for now (`herdr update` refuses on stable),
   # so force the channel back to preview on this side regardless of the repo value.
   sed -i 's/^channel = "stable"$/channel = "preview"/' "$WIN_HOME/AppData/Roaming/herdr/config.toml"
+  # Uncomment the WINDOWS ONLY [terminal] default_shell block so herdr panes
+  # spawn PowerShell 7 instead of Windows PowerShell 5.1. The repo copy keeps
+  # it commented because the same file is applied on Debian/WSL, where that
+  # path doesn't exist and would break pane spawning.
+  sed -i -e 's/^# \(\[terminal\]\)$/\1/' -e "s/^# \(default_shell = '.*pwsh\.exe'\)$/\1/" \
+    "$WIN_HOME/AppData/Roaming/herdr/config.toml"
+  # sed exits 0 even when nothing matches; fail loudly if the commented block
+  # ever drifts and the uncomment silently no-ops (panes would fall back to 5.1).
+  grep -q '^\[terminal\]$' "$WIN_HOME/AppData/Roaming/herdr/config.toml" &&
+    grep -q "^default_shell = '.*pwsh\.exe'$" "$WIN_HOME/AppData/Roaming/herdr/config.toml" ||
+    { echo "error: [terminal] default_shell uncomment did not take effect" >&2; exit 1; }
 
   PS_DIR="$WIN_HOME/Documents/WindowsPowerShell"
   backup_if_needed "$PS_DIR/Scripts/herdr-wt.ps1"
   copy "$REPO_ROOT/herdr/scripts/herdr-wt.ps1" "$PS_DIR/Scripts/herdr-wt.ps1"
   backup_if_needed "$PS_DIR/Microsoft.PowerShell_profile.ps1"
   copy "$REPO_ROOT/herdr/scripts/Microsoft.PowerShell_profile.ps1" "$PS_DIR/Microsoft.PowerShell_profile.ps1"
+
+  echo "== powershell 7 profile (copy, windows side via /mnt/c) =="
+  # PS7 has its own profile dir; herdr-wt.ps1 is deployed here too because the
+  # profile dot-sources it relative to $PSScriptRoot. Requires PS7 installed
+  # from the MSI package and Starship on PATH (see README, Windows prerequisites).
+  PS7_DIR="$WIN_HOME/Documents/PowerShell"
+  backup_if_needed "$PS7_DIR/Microsoft.PowerShell_profile.ps1"
+  copy "$REPO_ROOT/powershell/Microsoft.PowerShell_profile.ps1" "$PS7_DIR/Microsoft.PowerShell_profile.ps1"
+  backup_if_needed "$PS7_DIR/Scripts/herdr-wt.ps1"
+  copy "$REPO_ROOT/herdr/scripts/herdr-wt.ps1" "$PS7_DIR/Scripts/herdr-wt.ps1"
 
   echo "== ssh config (copy, windows side via /mnt/c, never keys) =="
   backup_if_needed "$WIN_HOME/.ssh/config"

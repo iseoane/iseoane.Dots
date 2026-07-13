@@ -30,10 +30,17 @@ if has_windows_mount; then
   echo "  synced wezterm/.wezterm.lua"
 
   echo "== herdr powershell scripts (windows side via /mnt/c) =="
+  # herdr-wt.ps1 is deployed to BOTH PowerShell dirs; the PS7 copy is canonical
+  # (it's the shell herdr and the terminal actually run), so sync from there.
   PS_DIR="$WIN_HOME/Documents/WindowsPowerShell"
-  cp "$PS_DIR/Scripts/herdr-wt.ps1" "$REPO_ROOT/herdr/scripts/herdr-wt.ps1"
+  PS7_DIR="$WIN_HOME/Documents/PowerShell"
+  cp "$PS7_DIR/Scripts/herdr-wt.ps1" "$REPO_ROOT/herdr/scripts/herdr-wt.ps1"
   cp "$PS_DIR/Microsoft.PowerShell_profile.ps1" "$REPO_ROOT/herdr/scripts/Microsoft.PowerShell_profile.ps1"
   echo "  synced herdr/scripts/herdr-wt.ps1 and Microsoft.PowerShell_profile.ps1"
+
+  echo "== powershell 7 profile (windows side via /mnt/c) =="
+  cp "$PS7_DIR/Microsoft.PowerShell_profile.ps1" "$REPO_ROOT/powershell/Microsoft.PowerShell_profile.ps1"
+  echo "  synced powershell/Microsoft.PowerShell_profile.ps1"
 else
   echo "== wezterm skipped: no /mnt/c mount (not running under WSL) =="
 fi

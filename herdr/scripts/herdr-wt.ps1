@@ -2,7 +2,10 @@
 # Functions are invoked via the thin lswt/crwt/openwt/rmwt wrappers defined in the profile.
 # Requires: herdr.exe, git.exe. Optional: gh.exe (for PR column).
 
-Set-StrictMode -Version Latest
+# Strict mode is set INSIDE each entry function, never at script level: this file is
+# dot-sourced by the profile, so a top-level Set-StrictMode would leak into the whole
+# interactive session and break third-party snippets that read unset variables
+# (e.g. herdr's injected prompt wrapper reading $global:__HerdrOriginalPrompt).
 
 # herdr/gh emit JSON that omits null/absent fields entirely rather than emitting `null`,
 # so a plain $obj.prop access throws PropertyNotFoundStrict under Set-StrictMode. This
@@ -123,6 +126,7 @@ function Get-SyncState {
 
 function Invoke-HerdrWtLs {
     param([string]$RepoPath)
+    Set-StrictMode -Version Latest
     Test-HerdrCommand herdr
     Test-HerdrCommand git
 
@@ -275,6 +279,7 @@ function Get-HerdrFocusArgs {
 
 function Invoke-HerdrWtCr {
     param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+    Set-StrictMode -Version Latest
     Test-HerdrCommand herdr
     Test-HerdrCommand git
 
@@ -330,6 +335,7 @@ function Invoke-HerdrWtCr {
 
 function Invoke-HerdrWtOpen {
     param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+    Set-StrictMode -Version Latest
     Test-HerdrCommand herdr
     Test-HerdrCommand git
 
@@ -368,6 +374,7 @@ function Invoke-HerdrWtOpen {
 
 function Invoke-HerdrWtRm {
     param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+    Set-StrictMode -Version Latest
     Test-HerdrCommand herdr
     Test-HerdrCommand git
 
