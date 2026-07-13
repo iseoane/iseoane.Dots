@@ -13,8 +13,15 @@ echo "  synced ssh/config"
 echo "== claude =="
 cp "$HOME/.claude/CLAUDE.md" "$REPO_ROOT/claude/CLAUDE.md"
 cp "$HOME/.claude/settings.json" "$REPO_ROOT/claude/settings.json"
-cp "$HOME/.claude/statusline.sh" "$REPO_ROOT/claude/statusline.sh"
-cp "$HOME/.claude/subagent-statusline.sh" "$REPO_ROOT/claude/subagent-statusline.sh"
+# Guarded: on a machine not yet provisioned with these files, an unguarded cp
+# would abort the whole sync under set -e, skipping every later section.
+for f in statusline.sh subagent-statusline.sh; do
+  if [ -f "$HOME/.claude/$f" ]; then
+    cp "$HOME/.claude/$f" "$REPO_ROOT/claude/$f"
+  else
+    echo "  skip: ~/.claude/$f not found on this machine"
+  fi
+done
 rm -rf "$REPO_ROOT/claude/agents" "$REPO_ROOT/claude/commands" "$REPO_ROOT/claude/skills"
 cp -r "$HOME/.claude/agents" "$REPO_ROOT/claude/agents"
 cp -r "$HOME/.claude/commands" "$REPO_ROOT/claude/commands"
@@ -45,9 +52,19 @@ if has_windows_mount; then
   echo "  synced powershell/Microsoft.PowerShell_profile.ps1"
 
   echo "== claude (windows side via /mnt/c) =="
-  cp "$WIN_HOME/.claude/settings.json" "$REPO_ROOT/claude/settings.windows.json"
-  cp "$WIN_HOME/.claude/statusline.ps1" "$REPO_ROOT/claude/statusline.ps1"
-  cp "$WIN_HOME/.claude/subagent-statusline.ps1" "$REPO_ROOT/claude/subagent-statusline.ps1"
+  # Same guard rationale as the Debian statuslines above.
+  if [ -f "$WIN_HOME/.claude/settings.json" ]; then
+    cp "$WIN_HOME/.claude/settings.json" "$REPO_ROOT/claude/settings.windows.json"
+  else
+    echo "  skip: windows .claude/settings.json not found"
+  fi
+  for f in statusline.ps1 subagent-statusline.ps1; do
+    if [ -f "$WIN_HOME/.claude/$f" ]; then
+      cp "$WIN_HOME/.claude/$f" "$REPO_ROOT/claude/$f"
+    else
+      echo "  skip: windows .claude/$f not found"
+    fi
+  done
   echo "  synced claude/settings.windows.json and windows statuslines"
 else
   echo "== wezterm skipped: no /mnt/c mount (not running under WSL) =="

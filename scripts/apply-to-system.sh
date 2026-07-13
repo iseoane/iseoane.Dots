@@ -88,6 +88,15 @@ if has_windows_mount; then
   copy "$REPO_ROOT/claude/statusline.ps1" "$WIN_HOME/.claude/statusline.ps1"
   backup_if_needed "$WIN_HOME/.claude/subagent-statusline.ps1"
   copy "$REPO_ROOT/claude/subagent-statusline.ps1" "$WIN_HOME/.claude/subagent-statusline.ps1"
+  # Windows gets the same agents/commands/skills as Debian; the repo is the
+  # source of truth for both, but sync-from-system.sh only pulls them back
+  # from the Debian side (single canonical origin).
+  backup_if_needed "$WIN_HOME/.claude/agents"
+  copy "$REPO_ROOT/claude/agents" "$WIN_HOME/.claude/agents"
+  backup_if_needed "$WIN_HOME/.claude/commands"
+  copy "$REPO_ROOT/claude/commands" "$WIN_HOME/.claude/commands"
+  backup_if_needed "$WIN_HOME/.claude/skills"
+  copy "$REPO_ROOT/claude/skills" "$WIN_HOME/.claude/skills"
 
   echo "== ssh config (copy, windows side via /mnt/c, never keys) =="
   backup_if_needed "$WIN_HOME/.ssh/config"

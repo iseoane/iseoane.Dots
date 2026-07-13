@@ -53,9 +53,12 @@ agents/, commands/, skills/,
 statusline.sh, subagent-statusline.sh
                            -> copied into ~/.claude/ (Debian/WSL)
 claude/settings.windows.json,
-statusline.ps1, subagent-statusline.ps1
+statusline.ps1, subagent-statusline.ps1,
+agents/, commands/, skills/
                            -> copied into Windows .claude/ (via /mnt/c);
-                              settings.windows.json lands as settings.json
+                              settings.windows.json lands as settings.json.
+                              agents/commands/skills deploy to BOTH sides but
+                              sync back from Debian only (canonical origin)
 ```
 
 `claude/settings.local.json` is intentionally NOT versioned — it holds
