@@ -3,7 +3,7 @@
 # Run this on a fresh machine (or after pulling changes) to install the dotfiles.
 #
 # zsh: symlinked (live edits stay in sync with the repo automatically).
-# claude/herdr/wezterm: copied (they mix config with runtime state / differ per OS,
+# claude/herdr/wezterm/nvim: copied (they mix config with runtime state / differ per OS,
 # see README for why symlinks aren't used there).
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
@@ -39,6 +39,10 @@ copy "$REPO_ROOT/herdr/config.toml" "$HOME/.config/herdr/config.toml"
 backup_if_needed "$HOME/.config/herdr/scripts/herdr-wt"
 copy "$REPO_ROOT/herdr/scripts/herdr-wt" "$HOME/.config/herdr/scripts/herdr-wt"
 chmod +x "$HOME/.config/herdr/scripts/herdr-wt"
+
+echo "== nvim (copy, debian/wsl side) =="
+backup_if_needed "$HOME/.config/nvim"
+copy "$REPO_ROOT/nvim" "$HOME/.config/nvim"
 
 if has_windows_mount; then
   echo "== wezterm (copy, windows side via /mnt/c) =="
@@ -101,6 +105,10 @@ if has_windows_mount; then
   echo "== ssh config (copy, windows side via /mnt/c, never keys) =="
   backup_if_needed "$WIN_HOME/.ssh/config"
   copy "$REPO_ROOT/ssh/config" "$WIN_HOME/.ssh/config"
+
+  echo "== nvim (copy, windows side via /mnt/c) =="
+  backup_if_needed "$WIN_HOME/AppData/Local/nvim"
+  copy "$REPO_ROOT/nvim" "$WIN_HOME/AppData/Local/nvim"
 else
   echo "== wezterm/herdr(win) skipped: no /mnt/c mount (not running under WSL) =="
 fi

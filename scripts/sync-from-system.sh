@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pull the live config back into the repo: machine -> repo.
 # Run this before committing, after you've edited the copy-based configs
-# (claude, herdr, wezterm) directly on the live system.
+# (claude, herdr, wezterm, nvim) directly on the live system.
 #
 # zsh is symlinked, so it never drifts from the repo and isn't handled here.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -32,6 +32,15 @@ echo "== herdr (debian/wsl side) =="
 cp "$HOME/.config/herdr/config.toml" "$REPO_ROOT/herdr/config.toml"
 cp "$HOME/.config/herdr/scripts/herdr-wt" "$REPO_ROOT/herdr/scripts/herdr-wt"
 echo "  synced herdr/config.toml and herdr/scripts/herdr-wt"
+
+echo "== nvim (debian/wsl side) =="
+if [ -d "$HOME/.config/nvim" ]; then
+  rm -rf "$REPO_ROOT/nvim"
+  cp -r "$HOME/.config/nvim" "$REPO_ROOT/nvim"
+  echo "  synced nvim/"
+else
+  echo "  skipped nvim: $HOME/.config/nvim not found"
+fi
 
 if has_windows_mount; then
   echo "== wezterm (windows side via /mnt/c) =="

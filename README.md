@@ -1,9 +1,9 @@
 # iseoane.Dots
 
-Personal dotfiles: zsh, PowerShell 7, wezterm, herdr, and Claude Code config —
-one repo shared between a Debian/WSL machine and its Windows host, with the
-same terminal experience (Starship prompt, history suggestions, worktree
-helpers) on both sides.
+Personal dotfiles: zsh, PowerShell 7, wezterm, herdr, Neovim, and Claude Code
+config — one repo shared between a Debian/WSL machine and its Windows host,
+with the same terminal experience (Starship prompt, history suggestions,
+worktree helpers) on both sides.
 
 ## Quick start
 
@@ -59,6 +59,8 @@ agents/, commands/, skills/
                               settings.windows.json lands as settings.json.
                               agents/commands/skills deploy to BOTH sides but
                               sync back from Debian only (canonical origin)
+nvim/                      -> copied to ~/.config/nvim (Debian/WSL) AND
+                              Windows AppData/Local/nvim (via /mnt/c)
 ```
 
 `claude/settings.local.json` is intentionally NOT versioned — it holds
@@ -81,9 +83,9 @@ machine-local overrides per Claude Code convention.
   `claude/settings.windows.json` (Windows, pwsh statuslines and
   node-guarded gitnexus hooks). Each side's statusline scripts are
   versioned next to them.
-- **herdr/**, **wezterm/**, **powershell/**: **copied** — they live at
-  different paths per OS (or only exist on one side), so a symlink can't
-  cover both. Details below.
+- **herdr/**, **wezterm/**, **powershell/**, **nvim/**: **copied** — they
+  live at different paths per OS (or only exist on one side), so a symlink
+  can't cover both. Details below.
 
 ### herdr: one config file, two OSes
 
@@ -123,6 +125,15 @@ Gotcha worth remembering: never `Set-StrictMode` at the top level of a
 dot-sourced script — it leaks into the whole interactive session and breaks
 third-party prompt hooks (herdr's prompt wrapper, for one). `herdr-wt.ps1`
 sets it inside each entry function instead.
+
+### nvim: one config, two OSes
+
+`nvim/` is the GentlemanNvim (LazyVim-based) config. Like herdr, it lives at
+different paths per OS (`~/.config/nvim` on Debian/WSL, `%LOCALAPPDATA%\nvim`
+on Windows), so it's copied to both locations. `lazy-lock.json` pins plugin
+versions, keeping both sides on identical plugins. Sync flows from the Debian
+side only: `sync-from-system.sh` pulls `~/.config/nvim` into the repo, and
+the Windows copy is always deployed from the repo.
 
 - **wezterm** currently only has a config on the Windows side
   (`/mnt/c/Users/iseoane/.wezterm.lua`); it's copied there via the WSL
