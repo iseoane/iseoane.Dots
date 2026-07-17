@@ -35,9 +35,8 @@ echo "  synced herdr/config.toml and herdr/scripts/herdr-wt"
 
 echo "== nvim (debian/wsl side) =="
 if [ -d "$HOME/.config/nvim" ]; then
-  rm -rf "$REPO_ROOT/nvim"
-  cp -r "$HOME/.config/nvim" "$REPO_ROOT/nvim"
-  echo "  synced nvim/"
+  backup_if_needed "$REPO_ROOT/nvim"
+  copy "$HOME/.config/nvim" "$REPO_ROOT/nvim"
 else
   echo "  skipped nvim: $HOME/.config/nvim not found"
 fi

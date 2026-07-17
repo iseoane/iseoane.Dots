@@ -8,3 +8,12 @@ id_rsa*
 id_ed25519*
 id_ecdsa*
 known_hosts*
+
+# nvim/ is synced from a whole-directory copy (see README), so guard against
+# committing machine-local secrets: the common LazyVim convention for a
+# per-machine override (API keys for avante/copilot/gemini, etc.) is a
+# local.lua/secrets.lua file or a .env, none of which should ever be shared.
+nvim/**/local.lua
+nvim/**/*.local.lua
+nvim/**/secrets.lua
+nvim/.env
