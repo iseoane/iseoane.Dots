@@ -1,9 +1,13 @@
 # iseoane.Dots
 
-Personal dotfiles: zsh, PowerShell 7, wezterm, herdr, Neovim, and Claude Code
-config — one repo shared between a Debian/WSL machine and its Windows host,
-with the same terminal experience (Starship prompt, history suggestions,
-worktree helpers) on both sides.
+Personal dotfiles: zsh, PowerShell 7, Starship, wezterm, herdr, Neovim, and
+Claude Code config — one repo shared between a Debian/WSL machine and its
+Windows host, with the same terminal experience (Starship prompt, history
+suggestions, worktree helpers) on both sides.
+
+Line endings are normalized to LF via `.gitattributes` (CRLF only for
+`*.ps1`), so Windows-side commits don't show up as thousands of rewritten
+lines.
 
 ## Quick start
 
@@ -28,7 +32,7 @@ Both scripts back up any live file they overwrite (`<file>.bak-<timestamp>`).
 | Tool | Install | Why this way |
 |------|---------|--------------|
 | PowerShell 7 | MSI package (`winget install Microsoft.PowerShell --scope machine`, elevated) | The Store/MSIX build registers `pwsh` only on the *user* PATH, so background processes (herdr server, services, SSH) can't resolve it. The MSI lands in `C:\Program Files\PowerShell\7` on the *machine* PATH. |
-| Starship | `winget install Starship.Starship` | Same prompt binary as Debian; both sides use Starship defaults (no `starship.toml`), so prompts match with zero config. |
+| Starship | `winget install Starship.Starship` | Same prompt binary as Debian. Shared config in `starship/starship.toml` (deployed to `~/.config/`) keeps prompts identical and raises `scan_timeout` (see the Starship section). |
 | Hack Nerd Font | already required by wezterm | Starship's symbols need it; `wezterm/.wezterm.lua` sets it as the terminal font. |
 | Terminal-Icons, DockerCompletion | `Install-Module Terminal-Icons, DockerCompletion -Scope CurrentUser` | PowerShell Gallery modules imported by the PS7 profile (icons in `ls` output, docker completions). |
 
@@ -36,6 +40,8 @@ Both scripts back up any live file they overwrite (`<file>.bak-<timestamp>`).
 
 ```
 zsh/.zshrc, .zprofile      -> symlinked to $HOME (Debian/WSL)
+starship/starship.toml     -> copied to ~/.config/starship.toml on BOTH
+                              Debian/WSL and Windows
 ssh/config                 -> copied to ~/.ssh/config AND Windows .ssh/config
                               (never keys, never known_hosts)
 wezterm/.wezterm.lua       -> copied to Windows $HOME (via /mnt/c)
@@ -83,9 +89,9 @@ machine-local overrides per Claude Code convention.
   `claude/settings.windows.json` (Windows, pwsh statuslines and
   node-guarded gitnexus hooks). Each side's statusline scripts are
   versioned next to them.
-- **herdr/**, **wezterm/**, **powershell/**, **nvim/**: **copied** — they
-  live at different paths per OS (or only exist on one side), so a symlink
-  can't cover both. Details below.
+- **herdr/**, **wezterm/**, **powershell/**, **nvim/**, **starship/**:
+  **copied** — they live at different paths per OS (or only exist on one
+  side), so a symlink can't cover both. Details below.
 
 ### herdr: one config file, two OSes
 
@@ -99,6 +105,24 @@ overrides can't leak into the repo:
 |---------|--------------------|-------------------|-----|
 | `[update] channel` | `stable` | `preview` | Windows herdr builds are preview-only for now; `herdr update` refuses on `stable`. Revisit once Windows gets stable builds. |
 | `[terminal] default_shell` | absent (commented) — panes use `$SHELL` (zsh) | `C:\Program Files\PowerShell\7\pwsh.exe` | Without it, herdr panes on Windows spawn Windows PowerShell 5.1: no Starship, no PSReadLine predictions, no profile. Full path because the herdr server's PATH is not the user's. |
+
+Two more things ride in the shared `config.toml`: the `herdr-file-viewer`
+plugin is bound to `prefix+alt+f`, and `[ui.sound] enabled = true` asks herdr
+to play its built-in sounds on agent `done`/`blocked` (audio on the Windows
+build is beta and may not play yet — under investigation). The official herdr
+control skill is also vendored at `.claude/skills/herdr/` as a project-level
+Claude Code skill, so `herdr` config work in this repo gets first-class help;
+it only activates inside a herdr pane (`HERDR_ENV=1`).
+
+### starship: shared prompt, raised scan_timeout
+
+`starship/starship.toml` is copied to `~/.config/starship.toml` on both OSes.
+Beyond matching the prompt, it raises `scan_timeout` to 120 ms (default 30)
+and `command_timeout` to 1000 ms. On Windows the directory scan competes with
+Sophos on-access AV, and the Google Drive `Z:` mount is a virtual FAT32
+filesystem served by GoogleDriveFS (a user-mode driver, slower than kernel
+NTFS), so per-file reads there blew past the 30 ms default and made Starship
+log `Scanning current directory timed out`. The higher value absorbs it.
 
 ### PowerShell: two profiles, one worktree script
 
