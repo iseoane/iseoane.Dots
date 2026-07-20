@@ -44,13 +44,15 @@ next_agent = "prefix+alt+j"
 # and Shift+number did not reach Herdr reliably in the current terminal setup.
 focus_agent = "prefix+ctrl+1..9"
 
-# Open the herdr-plus Projects picker (fuzzy browser of layouts).
-# Pick a project and herdr-plus builds its whole workspace on demand.
+# Open the herdr-file-viewer split pane (git-aware file browser).
+# Windows-specific action (PowerShell). On Linux/macOS the plugin exposes
+# "herdr-file-viewer.open-file-viewer" instead, so this binding only works on
+# the Windows side where the plugin is installed.
 [[keys.command]]
-key = "prefix+alt+p"
+key = "prefix+alt+f"
 type = "plugin_action"
-command = "cloudmanic.herdr-plus.projects"
-description = "herdr-plus: projects"
+command = "herdr-file-viewer.open-file-viewer-windows"
+description = "file-viewer: open"
 
 # Toggle the reviewr code-review sidebar (diffs + line comments + PR tab).
 # Its default binding is cmd+r (macOS only), so we bind our own here.
@@ -70,6 +72,16 @@ description = "gh-pr: open PR in browser"
 
 [ui.toast]
 delivery = "herdr"
+
+[ui.sound]
+# Play herdr's built-in sounds on agent state changes. `enabled` turns sound
+# on; a sound fires when an agent finishes (done) or becomes blocked / needs
+# input (request). Set done_path/request_path to your own mp3s to override.
+# Works on both Windows and Debian/WSL (played by the local herdr client).
+enabled = true
+
+[ui.sound.agents]
+claude = "on"
 
 # ── WINDOWS ONLY — uncomment after copying this file to %APPDATA%\herdr ──
 # Without this, herdr panes on Windows spawn Windows PowerShell 5.1 (no
