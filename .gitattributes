@@ -1,0 +1,25 @@
+# Normalize line endings in the repo to LF for every text file, regardless of
+# the OS the commit was made on. This kills the CRLF/LF diff noise that made
+# Windows-side commits look like they had rewritten thousands of lines.
+* text=auto eol=lf
+
+# Shell scripts run under bash/zsh (Debian/WSL); they must stay LF.
+*.sh    text eol=lf
+*.zsh   text eol=lf
+*.bash  text eol=lf
+
+# PowerShell scripts are checked out with CRLF for Windows PowerShell 5.1
+# compatibility; PS7 handles either, but CRLF is the safe Windows convention.
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.psd1  text eol=crlf
+
+# Binary assets — never touch their bytes or line endings.
+*.spl   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.gz    binary
+*.zip   binary

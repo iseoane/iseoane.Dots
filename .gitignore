@@ -17,3 +17,8 @@ nvim/**/local.lua
 nvim/**/*.local.lua
 nvim/**/secrets.lua
 nvim/.env
+
+# nvim spell files are large, machine-generated dictionaries (~26M) restored
+# from the timestamped backup on deploy (see apply-to-system.sh); never version
+# them. They were committed by accident once and untracked afterwards.
+nvim/spell/
