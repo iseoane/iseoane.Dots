@@ -1,0 +1,15 @@
+# Starship prompt configuration.
+# Shared across zsh (Debian/WSL) and PowerShell 7 (Windows) — see the init lines
+# in zsh/.zshrc and powershell/Microsoft.PowerShell_profile.ps1.
+
+# Raised from the 30ms default: on Windows the directory scan competes with
+# Sophos File Scanner (on-access AV) and Device Encryption on every file read.
+# The Z: drive is a virtual FAT32 filesystem served by GoogleDriveFS (a
+# user-mode driver, slower than kernel NTFS), so scanning folders there is far
+# slower than a real local disk. 60ms still tripped the warning on Z:; 120ms
+# absorbs the GoogleDriveFS + Sophos latency.
+scan_timeout = 120
+
+# git status shells out; give it more room under the same AV/encryption overhead
+# than the 500ms default before it too times out silently.
+command_timeout = 1000

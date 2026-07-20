@@ -11,6 +11,12 @@ echo "== zsh (symlink) =="
 symlink "$REPO_ROOT/zsh/.zshrc" "$HOME/.zshrc"
 symlink "$REPO_ROOT/zsh/.zprofile" "$HOME/.zprofile"
 
+echo "== starship (copy) =="
+# Shared prompt config for zsh and PowerShell 7. scan_timeout raised above the
+# 30ms default so AV/encryption file-read latency doesn't trip scan warnings.
+backup_if_needed "$HOME/.config/starship.toml"
+copy "$REPO_ROOT/starship/starship.toml" "$HOME/.config/starship.toml"
+
 echo "== ssh config (copy, never keys) =="
 backup_if_needed "$HOME/.ssh/config"
 copy "$REPO_ROOT/ssh/config" "$HOME/.ssh/config"
@@ -82,6 +88,10 @@ if has_windows_mount; then
   copy "$REPO_ROOT/powershell/Microsoft.PowerShell_profile.ps1" "$PS7_DIR/Microsoft.PowerShell_profile.ps1"
   backup_if_needed "$PS7_DIR/Scripts/herdr-wt.ps1"
   copy "$REPO_ROOT/herdr/scripts/herdr-wt.ps1" "$PS7_DIR/Scripts/herdr-wt.ps1"
+
+  # Starship reads %USERPROFILE%\.config\starship.toml on Windows too.
+  backup_if_needed "$WIN_HOME/.config/starship.toml"
+  copy "$REPO_ROOT/starship/starship.toml" "$WIN_HOME/.config/starship.toml"
 
   echo "== claude (copy, windows side via /mnt/c) =="
   # Windows keeps its OWN settings.json (pwsh statuslines, C:/ hook paths,
