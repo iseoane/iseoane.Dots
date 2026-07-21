@@ -16,6 +16,7 @@
 
 # Binary assets — never touch their bytes or line endings.
 *.spl   binary
+*.mp3   binary
 *.png   binary
 *.jpg   binary
 *.jpeg  binary

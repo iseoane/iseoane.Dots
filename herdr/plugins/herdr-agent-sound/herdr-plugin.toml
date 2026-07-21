@@ -1,0 +1,15 @@
+id = "herdr-agent-sound"
+name = "Herdr Agent Sound"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Play a sound when an agent becomes done or blocked. Local workaround for the broken native Windows sound player (herdr issue #1657): herdr's run_windows_player passes the mp3 path via -Command, so $Path is empty and playback exits 1. This plugin invokes PowerShell with -File and reads the path itself, so it actually plays."
+
+# Windows only: on Linux/macOS herdr's native [ui.sound] already works, and a
+# second player here would double up. Remove this restriction only if the
+# native player is broken on your platform too.
+platforms = ["windows"]
+
+# Fires on every agent state transition; the script filters for done/blocked.
+[[events]]
+on = "pane.agent_status_changed"
+command = ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", "scripts/play.ps1"]
