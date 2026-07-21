@@ -73,6 +73,20 @@ if has_windows_mount; then
     grep -q "^default_shell = '.*pwsh\.exe'$" "$WIN_HOME/AppData/Roaming/herdr/config.toml" ||
     { echo "error: [terminal] default_shell uncomment did not take effect" >&2; exit 1; }
 
+  # Link the local herdr-agent-sound plugin on the Windows herdr (sound
+  # workaround for herdr issue #1657; the native Windows player is broken).
+  # herdr records an absolute path in plugins.json, so it must be (re)linked per
+  # machine. Best-effort via Windows interop; if herdr isn't reachable from
+  # here, the echo tells you to link it by hand on the Windows side.
+  if command -v herdr.exe >/dev/null 2>&1 &&
+     HERDR_AGENT_SOUND_WIN="$(wslpath -w "$REPO_ROOT/herdr/plugins/herdr-agent-sound" 2>/dev/null)" &&
+     [ -n "$HERDR_AGENT_SOUND_WIN" ] &&
+     herdr.exe plugin link "$HERDR_AGENT_SOUND_WIN" >/dev/null 2>&1; then
+    echo "  linked herdr-agent-sound plugin (windows)"
+  else
+    echo "  herdr-agent-sound: link manually on Windows -> herdr plugin link <repo>\\herdr\\plugins\\herdr-agent-sound"
+  fi
+
   PS_DIR="$WIN_HOME/Documents/WindowsPowerShell"
   backup_if_needed "$PS_DIR/Scripts/herdr-wt.ps1"
   copy "$REPO_ROOT/herdr/scripts/herdr-wt.ps1" "$PS_DIR/Scripts/herdr-wt.ps1"
