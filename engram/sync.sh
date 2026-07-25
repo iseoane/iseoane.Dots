@@ -91,20 +91,39 @@ commit_if_changes() {
   return 0
 }
 
-# Trae el remoto con rebase. Como los chunks son append-only, los conflictos
-# reales se limitan al manifest.json; si los hay, abortamos y dejamos limpio.
+# Trae el remoto con rebase, distinguiendo la CAUSA del fallo. Como los chunks
+# son append-only, los conflictos reales se limitan al manifest.json.
+#
+# El diseño anterior usaba 'pull --rebase' (fetch+rebase en un paso) y devolvia
+# el mismo codigo 1 tanto para un hipo de red en el fetch como para un conflicto
+# genuino, asi que el hook gritaba WARN "fallo/conflicto" ante fallos benignos
+# que se autocuran. Ahora separamos fetch de rebase para clasificar:
+#   0 -> rebase OK
+#   1 -> transitorio (el fetch a GitHub no respondio; se reintenta con backoff)
+#   2 -> conflicto de rebase REAL (requiere revision manual)
+REBASE_FETCH_RETRIES="${ENGRAM_FETCH_RETRIES:-3}"
 rebase_remote() {
-  if ! git -c http.version=HTTP/1.1 pull --rebase --autostash -q origin "$BRANCH"; then
-    git rebase --abort 2>/dev/null || true
-    return 1
-  fi
-  return 0
+  local i=1
+  while (( i <= REBASE_FETCH_RETRIES )); do
+    git -c http.version=HTTP/1.1 fetch -q origin "$BRANCH" 2>/dev/null && break
+    (( i < REBASE_FETCH_RETRIES )) && sleep "$i"   # backoff 1s, 2s, ...
+    (( i++ )) || true
+  done
+  (( i > REBASE_FETCH_RETRIES )) && return 1        # el fetch nunca funciono
+  # Fetch OK: rebasa sobre lo traido. Un fallo aqui SI es un conflicto real.
+  git rebase --autostash -q "origin/$BRANCH" 2>/dev/null && return 0
+  git rebase --abort 2>/dev/null || true
+  return 2
 }
 
 # ── Acciones ──────────────────────────────────────────────────────────────────
 do_pull() {
   ensure_repo
-  rebase_remote || die_soft "git pull --rebase fallo/conflicto en pull"
+  rebase_remote
+  case $? in
+    1) log "Pull pospuesto (red transitoria); se reintenta en el proximo sync."; exit 0 ;;
+    2) die_soft "conflicto de rebase REAL en pull; requiere revision manual" ;;
+  esac
   # Importa a la BD local los chunks que aun no esten importados.
   "$ENGRAM_BIN" sync --import >/dev/null 2>&1 && log "Import OK." || log "WARN: engram sync --import devolvio error"
   log "Pull OK."
@@ -119,7 +138,11 @@ do_push() {
   commit_if_changes
   local attempt=1
   while (( attempt <= MAX_PUSH_RETRIES )); do
-    rebase_remote || die_soft "git pull --rebase fallo/conflicto (intento $attempt); commit local guardado para el proximo sync"
+    rebase_remote
+    case $? in
+      1) log "Push pospuesto (red transitoria, intento $attempt); commit local intacto, se reintenta en el proximo sync."; exit 0 ;;
+      2) die_soft "conflicto de rebase REAL en push; commit local intacto, requiere revision manual" ;;
+    esac
     # Importa lo que haya traido el rebase de la otra maquina (idempotente).
     "$ENGRAM_BIN" sync --import >/dev/null 2>&1 || true
     if git -c http.version=HTTP/1.1 push -q origin "$BRANCH"; then
