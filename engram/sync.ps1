@@ -25,18 +25,29 @@ $EngramBin  = Get-EnvOr 'ENGRAM_BIN'      'engram'    # ruta absoluta si no est�
 $LockFile   = Get-EnvOr 'ENGRAM_LOCK'     (Join-Path $HOME '.engram-sync\.sync.lock')
 $LogFile    = Get-EnvOr 'ENGRAM_LOG'      (Join-Path $HOME '.engram\sync.log')
 $MaxRetries = [int](Get-EnvOr 'ENGRAM_PUSH_RETRIES' '3')
-$LogMaxBytes = 1MB
+$LogRetentionDays = [int](Get-EnvOr 'ENGRAM_LOG_RETENTION_DAYS' '30')
 $HostTag    = try { hostname } catch { 'desconocido' }
 $script:Lock = $null
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 function Write-Log([string]$Msg) {
-  # Rotación: si el log supera LogMaxBytes, guarda una copia .1 y empieza de cero
-  if ((Test-Path $LogFile) -and (Get-Item $LogFile).Length -gt $LogMaxBytes) {
-    Move-Item -Force $LogFile "$LogFile.1"
-  }
   $line = '{0} [{1}] {2}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $HostTag, $Msg
   Add-Content -Path $LogFile -Value $line
+}
+
+# Poda el log a los últimos N días. Las líneas empiezan por 'yyyy-MM-dd ', que
+# ordena lexicográficamente = cronológicamente. Sustituye la vieja rotación por
+# tamaño (que dejaba crecer un .1 de 1 MB); las líneas sin fecha se conservan.
+function Prune-Log {
+  if (-not (Test-Path $LogFile)) { return }
+  $cutoff = (Get-Date).AddDays(-$LogRetentionDays).ToString('yyyy-MM-dd')
+  $kept = foreach ($l in (Get-Content -Path $LogFile)) {
+    if ($l -match '^\d{4}-\d{2}-\d{2} ') {
+      if ($l.Substring(0, 10) -ge $cutoff) { $l }
+    }
+    else { $l }
+  }
+  Set-Content -Path $LogFile -Value $kept
 }
 
 # Registra el problema pero NUNCA rompe la sesión de Claude Code (sale con 0).
@@ -69,6 +80,45 @@ function Commit-IfChanges {
   }
 }
 
+# El git-sync comparte observaciones/sesiones/prompts (el contenido real de
+# memoria) pero NO el grafo de relaciones de Engram: una mutación de relación
+# puede apuntar a una observación que Engram nunca exporta a chunks, y su
+# precondición de FK rompe 'engram sync --import' en la otra máquina. Las
+# relaciones son metadatos advisory que cada máquina regenera sola, así que las
+# quitamos de los chunks recién exportados antes de commitear. Reutiliza el
+# mismo prune en Python que sync.sh (Windows también trae python en PATH);
+# idempotente: solo reescribe chunks que aún contienen relaciones.
+function Strip-Relations {
+  $py = Get-Command python -ErrorAction SilentlyContinue
+  if (-not $py) { $py = Get-Command python3 -ErrorAction SilentlyContinue }
+  if (-not $py) { Write-Log 'WARN: python ausente; guard de relaciones omitido'; return }
+  $env:ENGRAM_CHUNKS_DIR = Join-Path $RepoDir '.engram\chunks'
+  $code = @'
+import gzip, json, glob, os
+chunks_dir = os.environ["ENGRAM_CHUNKS_DIR"]
+for path in glob.glob(os.path.join(chunks_dir, "*.jsonl.gz")):
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        raw = f.read()
+    had_nl = raw.endswith("\n")
+    try:
+        data = json.loads(raw.rstrip("\n"))
+    except Exception:
+        continue
+    muts = data.get("mutations") or []
+    kept = [m for m in muts if m.get("entity") != "relation"]
+    if len(kept) != len(muts):
+        data["mutations"] = kept
+        out = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
+        if had_nl:
+            out += "\n"
+        with open(path, "wb") as rf:
+            with gzip.GzipFile(fileobj=rf, mode="wb", mtime=0) as gz:
+                gz.write(out.encode("utf-8"))
+'@
+  $code | & $py.Source - 2>$null
+  if ($LASTEXITCODE -ne 0) { Write-Log 'WARN: guard de relaciones fallo' }
+}
+
 function Rebase-Remote {
   & git -c http.version=HTTP/1.1 pull --rebase --autostash -q origin $Branch
   if ($LASTEXITCODE -ne 0) {
@@ -92,6 +142,8 @@ function Do-Push {
   Ensure-Repo
   & $EngramBin sync --all 2>$null
   if ($LASTEXITCODE -ne 0) { Write-Log 'WARN: engram sync --all devolvió error' }
+  # Quita el grafo de relaciones de los chunks recién exportados (ver arriba).
+  Strip-Relations
   Commit-IfChanges
   for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
     if (-not (Rebase-Remote)) {
@@ -111,6 +163,7 @@ if (-not $Cmd) { Write-Error 'uso: sync.ps1 {pull|push}'; exit 2 }
 
 New-Item -ItemType Directory -Force -Path (Split-Path $LockFile) | Out-Null
 New-Item -ItemType Directory -Force -Path (Split-Path $LogFile)  | Out-Null
+Prune-Log
 
 $deadline = (Get-Date).AddSeconds(20)
 while ($true) {
