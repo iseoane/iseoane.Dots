@@ -29,3 +29,12 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 # ── bun ─────────────────────────────────────────────────────────────
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+# ── GitHub API token (raises unauthenticated 60/hr rate limit) ──────
+# engram's own update-check (and other tools) hits api.github.com on
+# every run; without auth that 60/hr limit gets exhausted fast by the
+# engram-sync hooks. Resolved from `gh`'s own stored credentials at
+# shell startup so the token itself never lands in this versioned file.
+if command -v gh >/dev/null 2>&1; then
+  export GH_TOKEN="$(gh auth token 2>/dev/null)"
+fi
