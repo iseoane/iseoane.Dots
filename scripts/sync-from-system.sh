@@ -41,6 +41,14 @@ else
   echo "  skipped nvim: $HOME/.config/nvim not found"
 fi
 
+echo "== engram sync hook (debian/wsl side) =="
+if [ -f "$HOME/.engram-sync/sync.sh" ]; then
+  cp "$HOME/.engram-sync/sync.sh" "$REPO_ROOT/engram/sync.sh"
+  echo "  synced engram/sync.sh"
+else
+  echo "  skip: ~/.engram-sync/sync.sh not found"
+fi
+
 if has_windows_mount; then
   echo "== wezterm (windows side via /mnt/c) =="
   cp "$WIN_HOME/.wezterm.lua" "$REPO_ROOT/wezterm/.wezterm.lua"
@@ -74,6 +82,14 @@ if has_windows_mount; then
     fi
   done
   echo "  synced claude/settings.windows.json and windows statuslines"
+
+  echo "== engram sync hook (windows side via /mnt/c) =="
+  if [ -f "$WIN_HOME/.engram-sync/sync.ps1" ]; then
+    cp "$WIN_HOME/.engram-sync/sync.ps1" "$REPO_ROOT/engram/sync.ps1"
+    echo "  synced engram/sync.ps1"
+  else
+    echo "  skip: windows .engram-sync/sync.ps1 not found"
+  fi
 else
   echo "== wezterm skipped: no /mnt/c mount (not running under WSL) =="
 fi

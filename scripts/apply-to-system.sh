@@ -50,6 +50,15 @@ echo "== nvim (copy, debian/wsl side) =="
 backup_if_needed "$HOME/.config/nvim"
 copy "$REPO_ROOT/nvim" "$HOME/.config/nvim"
 
+echo "== engram sync hook (copy, debian/wsl side) =="
+# ~/.engram-sync is its own git repo (private engram-data remote) that the
+# SessionStart/Stop hooks in claude/settings.json invoke to push/pull Engram
+# memory chunks between machines. Only the hook script is versioned here;
+# the clone's .git/ and .engram/ data are machine state, never touched by copy.
+mkdir -p "$HOME/.engram-sync"
+copy "$REPO_ROOT/engram/sync.sh" "$HOME/.engram-sync/sync.sh"
+chmod +x "$HOME/.engram-sync/sync.sh"
+
 if has_windows_mount; then
   echo "== wezterm (copy, windows side via /mnt/c) =="
   backup_if_needed "$WIN_HOME/.wezterm.lua"
@@ -133,6 +142,12 @@ if has_windows_mount; then
   echo "== nvim (copy, windows side via /mnt/c) =="
   backup_if_needed "$WIN_HOME/AppData/Local/nvim"
   copy "$REPO_ROOT/nvim" "$WIN_HOME/AppData/Local/nvim"
+
+  echo "== engram sync hook (copy, windows side via /mnt/c) =="
+  # Windows-side counterpart: settings.windows.json hooks call
+  # C:/Users/iseoane/.engram-sync/sync.ps1, its own engram-data clone.
+  mkdir -p "$WIN_HOME/.engram-sync"
+  copy "$REPO_ROOT/engram/sync.ps1" "$WIN_HOME/.engram-sync/sync.ps1"
 else
   echo "== wezterm/herdr(win) skipped: no /mnt/c mount (not running under WSL) =="
 fi

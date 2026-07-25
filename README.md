@@ -67,6 +67,9 @@ agents/, commands/, skills/
                               sync back from Debian only (canonical origin)
 nvim/                      -> copied to ~/.config/nvim (Debian/WSL) AND
                               Windows AppData/Local/nvim (via /mnt/c)
+engram/sync.sh             -> copied to ~/.engram-sync/sync.sh (Debian/WSL)
+engram/sync.ps1            -> copied to Windows .engram-sync/sync.ps1
+                              (via /mnt/c)
 ```
 
 `claude/settings.local.json` is intentionally NOT versioned — it holds
@@ -162,3 +165,17 @@ the Windows copy is always deployed from the repo.
 - **wezterm** currently only has a config on the Windows side
   (`/mnt/c/Users/iseoane/.wezterm.lua`); it's copied there via the WSL
   `/mnt/c` bridge.
+
+### engram: cross-machine memory sync hooks
+
+`~/.engram-sync` on each machine is its own git clone of a **separate,
+private `engram-data` repo** (not this one) — it holds the append-only
+Engram memory chunks (`.engram/chunks/`, `.engram/manifest.json`) that get
+pushed/pulled between machines. Only the two hook scripts that drive that
+clone are versioned here, as `engram/sync.sh` (Debian/WSL, invoked by
+`claude/settings.json`'s SessionStart/Stop hooks) and `engram/sync.ps1`
+(Windows, invoked by `claude/settings.windows.json`). `apply-to-system.sh`
+copies each script into the existing `~/.engram-sync` clone without touching
+its `.git/` or `.engram/` data; `sync-from-system.sh` pulls them back the
+same way, skipping the copy on a machine where `~/.engram-sync` hasn't been
+cloned yet.
