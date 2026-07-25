@@ -18,6 +18,17 @@ if (Get-Command starship -ErrorAction SilentlyContinue) {
 }
 
 # -----------------------------------------------------------------
+# 1b. GitHub API token (raises unauthenticated 60/hr rate limit)
+# -----------------------------------------------------------------
+# engram's own update-check (and other tools) hits api.github.com on every
+# run; without auth that 60/hr limit gets exhausted fast by the
+# engram-sync hooks. Reused from gh's own stored credentials so the token
+# itself never lands in this versioned file.
+if (Get-Command gh -ErrorAction SilentlyContinue) {
+    $env:GH_TOKEN = gh auth token 2>$null
+}
+
+# -----------------------------------------------------------------
 # 2. Modules (icons, predictions, docker completion)
 # -----------------------------------------------------------------
 # Colored icons for ls / dir
