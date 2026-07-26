@@ -54,6 +54,14 @@ herdr/scripts/Microsoft.PowerShell_profile.ps1
                            -> copied to Documents/WindowsPowerShell/ (PS 5.1)
 powershell/Microsoft.PowerShell_profile.ps1
                            -> copied to Documents/PowerShell/ (PS 7)
+scripts/worktree-management/worktree-mgmt.sh
+                           -> copied to ~/.config/worktree-management/ (Debian/WSL)
+scripts/worktree-management/worktree-mgmt.ps1
+                           -> copied to Documents/PowerShell/Scripts/ (Windows, PS7 only)
+scripts/worktree-management/config
+                           -> copied to ~/.config/worktree-management/config AND
+                              Windows .config/worktree-management/config (both OS
+                              roots live in this one versioned file)
 claude/CLAUDE.md, settings.json,
 agents/, commands/, skills/,
 statusline.sh, subagent-statusline.sh
@@ -152,6 +160,32 @@ Gotcha worth remembering: never `Set-StrictMode` at the top level of a
 dot-sourced script — it leaks into the whole interactive session and breaks
 third-party prompt hooks (herdr's prompt wrapper, for one). `herdr-wt.ps1`
 sets it inside each entry function instead.
+
+### worktree management: herdr-independent, plain `git worktree`
+
+`scripts/worktree-management/` is a second, unrelated worktree toolkit
+(`wtls`/`wtnew`/`wtopen`/`wtrm`) that talks to plain `git worktree` directly —
+no herdr dependency at all. It exists alongside the herdr-integrated
+`lswt`/`crwt`/`openwt`/`rmwt` above, which are left untouched and still work
+if herdr is running; the new commands are for worktree management without a
+herdr server.
+
+Worktrees are created under a configurable root, one per OS, at
+`{root}/worktrees/{repo-name}/{branch}` (a branch like `feature/foo` just
+nests into `worktrees/{repo-name}/feature/foo`). `{repo-name}` is resolved
+from the git common-dir so it's stable even when you run `wtnew` from inside
+an existing worktree rather than the main checkout. Both OS roots live in one
+versioned file, `scripts/worktree-management/config` (`linux_root=...` /
+`windows_root=...`); a machine prompts once for its own key on first use and
+persists the answer to its deployed copy. Run `sync-from-system.sh` afterward
+to pull that value back into the repo — once both keys are committed, a
+fresh machine gets both pre-seeded by `apply-to-system.sh` and never has to
+prompt again.
+
+Like `herdr-wt.ps1`, the PowerShell side (`worktree-mgmt.ps1`) is dot-sourced
+from the PS7 profile only — `wtopen` needs `Set-Location` to run in the
+interactive session, not a subprocess. The bash side (`worktree-mgmt.sh`) is
+sourced from `.zshrc` for the same reason (`wtopen` needs a bare `cd`).
 
 ### nvim: one config, two OSes
 

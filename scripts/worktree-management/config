@@ -1,0 +1,6 @@
+# Root directory under which per-repo worktree folders are created:
+#   {root}/worktrees/{repo-name}/{branch}
+# One entry per OS; left unset here on purpose so wtnew/wtls prompt once on
+# first use per machine and persist the answer to the deployed copy.
+linux_root=
+windows_root=

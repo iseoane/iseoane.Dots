@@ -33,6 +33,10 @@ cp "$HOME/.config/herdr/config.toml" "$REPO_ROOT/herdr/config.toml"
 cp "$HOME/.config/herdr/scripts/herdr-wt" "$REPO_ROOT/herdr/scripts/herdr-wt"
 echo "  synced herdr/config.toml and herdr/scripts/herdr-wt"
 
+echo "== worktree management (debian/wsl side, herdr-independent) =="
+cp "$HOME/.config/worktree-management/worktree-mgmt.sh" "$REPO_ROOT/scripts/worktree-management/worktree-mgmt.sh"
+echo "  synced scripts/worktree-management/worktree-mgmt.sh"
+
 echo "== nvim (debian/wsl side) =="
 if [ -d "$HOME/.config/nvim" ]; then
   backup_if_needed "$REPO_ROOT/nvim"
@@ -66,6 +70,19 @@ if has_windows_mount; then
   echo "== powershell 7 profile (windows side via /mnt/c) =="
   cp "$PS7_DIR/Microsoft.PowerShell_profile.ps1" "$REPO_ROOT/powershell/Microsoft.PowerShell_profile.ps1"
   echo "  synced powershell/Microsoft.PowerShell_profile.ps1"
+
+  echo "== worktree management (windows side via /mnt/c, herdr-independent) =="
+  cp "$PS7_DIR/Scripts/worktree-mgmt.ps1" "$REPO_ROOT/scripts/worktree-management/worktree-mgmt.ps1"
+  # Each OS only knows/writes its own key, so merge rather than overwrite: pull
+  # linux_root from the Debian side's config and windows_root from the Windows
+  # side's, replacing only the matching line in the repo copy (comment header
+  # and the other OS's key are left untouched).
+  WT_CONFIG="$REPO_ROOT/scripts/worktree-management/config"
+  LINUX_ROOT_VAL=$(grep -E '^linux_root=' "$HOME/.config/worktree-management/config" 2>/dev/null | tail -1 | cut -d= -f2-)
+  WIN_ROOT_VAL=$(grep -E '^windows_root=' "$WIN_HOME/.config/worktree-management/config" 2>/dev/null | tail -1 | cut -d= -f2-)
+  [ -n "$LINUX_ROOT_VAL" ] && sed -i "s#^linux_root=.*#linux_root=${LINUX_ROOT_VAL}#" "$WT_CONFIG"
+  [ -n "$WIN_ROOT_VAL" ] && sed -i "s#^windows_root=.*#windows_root=${WIN_ROOT_VAL}#" "$WT_CONFIG"
+  echo "  synced scripts/worktree-management/worktree-mgmt.ps1 and config"
 
   echo "== claude (windows side via /mnt/c) =="
   # Same guard rationale as the Debian statuslines above.

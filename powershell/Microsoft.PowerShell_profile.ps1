@@ -97,7 +97,19 @@ function openwt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) I
 function rmwt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-HerdrWtRm @rest }
 
 # -----------------------------------------------------------------
-# 5. TortoiseSVN shortcuts
+# 5. worktree management (herdr-independent, plain git worktree)
+# -----------------------------------------------------------------
+$wtMgmtScript = Join-Path $PSScriptRoot "Scripts\worktree-mgmt.ps1"
+if (Test-Path $wtMgmtScript) {
+    . $wtMgmtScript
+}
+function wtls { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-WtLs @rest }
+function wtnew { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-WtNew @rest }
+function wtopen { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-WtOpen @rest }
+function wtrm { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-WtRm @rest }
+
+# -----------------------------------------------------------------
+# 6. TortoiseSVN shortcuts
 # -----------------------------------------------------------------
 # Opens the Tortoise update window in the current folder
 function svn-up {

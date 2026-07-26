@@ -67,6 +67,9 @@ alias crwt='~/.config/herdr/scripts/herdr-wt cr'
 alias openwt='~/.config/herdr/scripts/herdr-wt open'
 alias rmwt='~/.config/herdr/scripts/herdr-wt rm'
 
+# worktree management (herdr-independent, plain git worktree)
+[ -f ~/.config/worktree-management/worktree-mgmt.sh ] && source ~/.config/worktree-management/worktree-mgmt.sh
+
 # ── Syntax highlighting ─────────────────────────────────────────────
 # Must be sourced LAST, after all other zle widgets are defined
 source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
