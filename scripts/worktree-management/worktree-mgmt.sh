@@ -227,6 +227,23 @@ wt_find_path() {
   '
 }
 
+# Paths of registrations git reports as prunable (their directory is gone), one
+# per line. Exists so wt_new can name what a repo-wide `git worktree prune` is
+# about to reclaim, instead of pruning silently.
+# Capture git's output BEFORE awk sees it. In `git ... | awk ...` the exit status
+# is awk's, and awk happily exits 0 on empty input -- so a failed `worktree list`
+# would look exactly like "nothing is stale" and the caller would prune blind,
+# which is the very mistake this helper exists to prevent.
+wt_stale_paths() {
+  local porcelain
+  porcelain=$(git -C "$1" worktree list --porcelain) || return 1
+  printf '%s\n' "$porcelain" | awk '
+    /^worktree /{ if (p!="" && st) print p; p=substr($0, 10); st=0 }
+    /^prunable/{ st=1 }
+    END{ if (p!="" && st) print p }
+  '
+}
+
 wt_ls() {
   wt_need git || return 1
   local repo; repo=$(wt_resolve_repo "${1:-}") || return 1
@@ -379,8 +396,25 @@ wt_new() {
       # Sending the user to wtopen here would just fail at the cd, so drop the
       # dead registration; git otherwise still thinks the branch is checked out
       # there and refuses to attach it anywhere else.
-      echo "note: clearing stale worktree registration for '$name' (${existing/#$HOME/\~})."
-      git -C "$repo" worktree prune
+      #
+      # `git worktree prune` has NO per-entry scope: it reclaims every stale
+      # registration in the repo. So list the collateral instead of naming only
+      # this branch and quietly taking the rest along.
+      echo "note: clearing stale worktree registration for '$name' (${existing/#$HOME/\~})." >&2
+      local stale_list
+      stale_list=$(wt_stale_paths "$repo") \
+        || { wt_die "could not list stale worktree registrations; refusing to prune blindly"; return 1; }
+      local -a also_stale=()
+      local sp
+      while IFS= read -r sp; do
+        [ -n "$sp" ] && [ "$sp" != "$existing" ] && also_stale+=("$sp")
+      done <<< "$stale_list"
+      if [ "${#also_stale[@]}" -gt 0 ]; then
+        echo "note: 'git worktree prune' is repo-wide, so these stale registrations go too:" >&2
+        for sp in "${also_stale[@]}"; do echo "        ${sp/#$HOME/\~}" >&2; done
+      fi
+      git -C "$repo" worktree prune \
+        || { wt_die "git worktree prune failed, so '$name' cannot be re-attached"; return 1; }
     fi
     reattach=1
   fi
