@@ -214,10 +214,19 @@ wt_get_root() {
   printf '%s\n' "$root"
 }
 
-# Locate a branch's worktree path via `git worktree list --porcelain`.
+# Locate a branch's worktree path via `git worktree list --porcelain`. Empty
+# output with a zero exit means the branch genuinely has no worktree -- the
+# normal case every caller already checks for. A non-zero exit means the
+# LISTING failed, which is a different problem: capture git's output first and
+# propagate a real failure, the same fix wt_stale_paths needed for the same
+# `git ... | awk ...`-hides-git's-status trap (see its comment). Without this,
+# a failing `git worktree list` looked identical to "no worktree for this
+# branch" to every one of this function's callers.
 wt_find_path() {
-  local repo="$1" branch="$2"
-  git -C "$repo" worktree list --porcelain | awk -v b="$branch" '
+  local repo="$1" branch="$2" porcelain
+  porcelain=$(git -C "$repo" worktree list --porcelain) \
+    || { wt_die "could not list worktrees in '$repo'"; return 1; }
+  printf '%s\n' "$porcelain" | awk -v b="$branch" '
     # substr, NOT $2: a worktree path may contain SPACES, and $2 would silently
     # truncate it at the first one, handing the caller a path that does not exist.
     # "worktree " is 9 characters, so the path starts at column 10. Branch names
@@ -249,6 +258,15 @@ wt_ls() {
   local repo; repo=$(wt_resolve_repo "${1:-}") || return 1
   local cur_top; cur_top=$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || echo "")
 
+  # Capture BEFORE the awk pipeline below, and before the (possibly slow) PR
+  # lookup: `git ... | awk ...` hands the pipeline awk's exit status, and awk
+  # exits 0 on empty input, so a genuinely failed listing would render as an
+  # empty table instead of an error -- the same trap wt_stale_paths' comment
+  # describes, one call site over.
+  local porcelain
+  porcelain=$(git -C "$repo" worktree list --porcelain) \
+    || { wt_die "could not list worktrees in '$repo'"; return 1; }
+
   # Build a PR lookup (branch -> "#N STATE"), single gh call. Optional.
   declare -A PRMAP=()
   if command -v gh >/dev/null 2>&1; then
@@ -278,7 +296,7 @@ wt_ls() {
   local disp_branch from head state sync pr mark display_path prunable
   {
     printf '\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "BRANCH" "FROM" "HEAD" "STATE" "SYNC" "PR" "PATH"
-    git -C "$repo" worktree list --porcelain | awk '
+    printf '%s\n' "$porcelain" | awk '
       # substr, NOT $2: worktree paths may contain spaces (see wt_find_path).
       # `prunable` is carried through too: git emits it for a registration whose
       # gitdir points nowhere, and without it such a row used to render as an
@@ -374,6 +392,50 @@ wt_choose_branch() {
   echo "${branches[$((sel - 1 + WT_ARRAY_BASE))]}"
 }
 
+# Decide what wtnew should do about an existing branch: print "new" on stdout
+# if it has none (wtnew should create one), or "reattach" if it exists and can
+# safely get a worktree (clearing any stale registration for it first). A
+# non-zero return means the decision itself already failed and its own wt_die
+# explains why -- either a LIVE worktree already exists (use wtopen instead),
+# or a git step here failed. Extracted out of wt_new: this block grew across
+# three consecutive rounds of fixes (existence check, refuse-vs-reattach,
+# stale-collateral disclosure, prune) until it no longer read as one step.
+wt_new_resolve_existing() {
+  local repo="$1" name="$2" existing
+  git -C "$repo" show-ref --verify --quiet "refs/heads/$name" || { echo "new"; return 0; }
+
+  existing=$(wt_find_path "$repo" "$name") || return 1
+  if [ -n "$existing" ] && [ -d "$existing" ]; then
+    wt_die "branch '$name' already has a worktree — use 'wtopen $name'"; return 1
+  fi
+  if [ -n "$existing" ]; then
+    # Registered but the directory is gone -- what wtls shows as STATE stale.
+    # Sending the user to wtopen here would just fail at the cd, so drop the
+    # dead registration; git otherwise still thinks the branch is checked out
+    # there and refuses to attach it anywhere else.
+    #
+    # `git worktree prune` has NO per-entry scope: it reclaims every stale
+    # registration in the repo. So list the collateral instead of naming only
+    # this branch and quietly taking the rest along.
+    echo "note: clearing stale worktree registration for '$name' (${existing/#$HOME/\~})." >&2
+    local stale_list
+    stale_list=$(wt_stale_paths "$repo") \
+      || { wt_die "could not list stale worktree registrations; refusing to prune blindly"; return 1; }
+    local -a also_stale=()
+    local sp
+    while IFS= read -r sp; do
+      [ -n "$sp" ] && [ "$sp" != "$existing" ] && also_stale+=("$sp")
+    done <<< "$stale_list"
+    if [ "${#also_stale[@]}" -gt 0 ]; then
+      echo "note: 'git worktree prune' is repo-wide, so these stale registrations go too:" >&2
+      for sp in "${also_stale[@]}"; do echo "        ${sp/#$HOME/\~}" >&2; done
+    fi
+    git -C "$repo" worktree prune \
+      || { wt_die "git worktree prune failed, so '$name' cannot be re-attached"; return 1; }
+  fi
+  echo "reattach"
+}
+
 wt_new() {
   wt_need git || return 1
   local name="${1:-}" from="${2:-}"
@@ -384,40 +446,9 @@ wt_new() {
   # An existing branch is two very different situations, and conflating them used
   # to dead-end the user: wtopen said "create it with wtnew" while wtnew said
   # "already exists -- use wtopen", so a branch whose worktree had been removed
-  # could never get one back. Only refuse when a worktree actually exists.
-  local reattach=0 existing=""
-  if git -C "$repo" show-ref --verify --quiet "refs/heads/$name"; then
-    existing=$(wt_find_path "$repo" "$name")
-    if [ -n "$existing" ] && [ -d "$existing" ]; then
-      wt_die "branch '$name' already has a worktree — use 'wtopen $name'"; return 1
-    fi
-    if [ -n "$existing" ]; then
-      # Registered but the directory is gone -- what wtls shows as STATE stale.
-      # Sending the user to wtopen here would just fail at the cd, so drop the
-      # dead registration; git otherwise still thinks the branch is checked out
-      # there and refuses to attach it anywhere else.
-      #
-      # `git worktree prune` has NO per-entry scope: it reclaims every stale
-      # registration in the repo. So list the collateral instead of naming only
-      # this branch and quietly taking the rest along.
-      echo "note: clearing stale worktree registration for '$name' (${existing/#$HOME/\~})." >&2
-      local stale_list
-      stale_list=$(wt_stale_paths "$repo") \
-        || { wt_die "could not list stale worktree registrations; refusing to prune blindly"; return 1; }
-      local -a also_stale=()
-      local sp
-      while IFS= read -r sp; do
-        [ -n "$sp" ] && [ "$sp" != "$existing" ] && also_stale+=("$sp")
-      done <<< "$stale_list"
-      if [ "${#also_stale[@]}" -gt 0 ]; then
-        echo "note: 'git worktree prune' is repo-wide, so these stale registrations go too:" >&2
-        for sp in "${also_stale[@]}"; do echo "        ${sp/#$HOME/\~}" >&2; done
-      fi
-      git -C "$repo" worktree prune \
-        || { wt_die "git worktree prune failed, so '$name' cannot be re-attached"; return 1; }
-    fi
-    reattach=1
-  fi
+  # could never get one back. wt_new_resolve_existing tells the two apart.
+  local resolution; resolution=$(wt_new_resolve_existing "$repo" "$name") || return 1
+  local reattach=0; [ "$resolution" = "reattach" ] && reattach=1
 
   local baseref="$from"
   if [ "$reattach" -eq 1 ]; then
@@ -476,7 +507,7 @@ wt_open() {
   local repo; repo=$(wt_resolve_repo) || return 1
 
   # `wtpath`, never `path`: zsh ties lowercase `path` to `$PATH`.
-  local wtpath; wtpath=$(wt_find_path "$repo" "$branch")
+  local wtpath; wtpath=$(wt_find_path "$repo" "$branch") || return 1
   [ -n "$wtpath" ] || { wt_die "no worktree for branch '$branch' — create it with 'wtnew $branch'"; return 1; }
 
   # Plain `cd`, no subshell: this must run in the calling interactive shell.
@@ -507,7 +538,7 @@ wt_rm() {
   [ "$branch" = "$current" ] && { wt_die "you're currently on '$branch'; switch away first"; return 1; }
 
   # `wtpath`, never `path`: zsh ties lowercase `path` to `$PATH`.
-  local wtpath; wtpath=$(wt_find_path "$repo" "$branch")
+  local wtpath; wtpath=$(wt_find_path "$repo" "$branch") || return 1
   [ -n "$wtpath" ] || { wt_die "no worktree for branch '$branch'"; return 1; }
 
   # State: merged into detected base? open PR? dirty?
