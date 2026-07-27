@@ -120,9 +120,21 @@ for path in glob.glob(os.path.join(chunks_dir, "*.jsonl.gz")):
 }
 
 function Rebase-Remote {
-  & git -c http.version=HTTP/1.1 pull --rebase --autostash -q origin $Branch
+  # `*>$null` on BOTH git calls, not just stderr: any unredirected output from
+  # a native command inside a PowerShell function becomes part of that
+  # function's RETURN VALUE alongside the explicit `return`. On a real
+  # conflict, `git pull --rebase` prints several lines ("Auto-merging...",
+  # "CONFLICT (content)...", hint text) which turned `Rebase-Remote`'s return
+  # into a multi-element array -- and a non-empty array is ALWAYS truthy in
+  # PowerShell, no matter what its last element is. So `if (-not
+  # (Rebase-Remote))` never fired on a genuine conflict: it silently treated
+  # every failed rebase as success and let the caller push into a still-broken
+  # repo. Confirmed live: a real conflict left `$r` holding conflict text plus
+  # `$false`, and `-not $r` still evaluated to `$false`. Suppressing all
+  # output makes the function's only output the literal boolean.
+  & git -c http.version=HTTP/1.1 pull --rebase --autostash -q origin $Branch *>$null
   if ($LASTEXITCODE -ne 0) {
-    & git rebase --abort 2>$null
+    & git rebase --abort *>$null
     return $false
   }
   return $true
