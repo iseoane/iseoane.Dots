@@ -17,9 +17,36 @@
 
 WT_CONFIG_FILE="$HOME/.config/worktree-management/config"
 
+# zsh arrays are 1-indexed, bash arrays 0-indexed, and reading `${a[0]}` in zsh
+# yields the EMPTY STRING rather than the first element. Every literal index
+# below adds this offset instead of hardcoding 0.
+if [ -n "${ZSH_VERSION:-}" ]; then WT_ARRAY_BASE=1; else WT_ARRAY_BASE=0; fi
+
 wt_die() { echo "wt: $*" >&2; return 1; }
 
 wt_need() { command -v "$1" >/dev/null 2>&1 || { wt_die "'$1' not found on PATH"; return 1; }; }
+
+# Prompt on the terminal, read one line from the terminal, echo the answer on stdout.
+# NOT `read -rp "..."`: in zsh `-p` means "read from the COPROCESS", so that form dies
+# outright with `read: -p: no coprocess`. Printing the prompt separately works in both
+# shells, and sending it to /dev/tty (not stdout) keeps it out of the captured value --
+# which matters because callers use `x=$(wt_prompt ...)`. No tty -> non-zero, so callers
+# abort instead of silently reading EOF.
+wt_prompt() {
+  local msg="$1" ans=""
+  # `2>/dev/null` FIRST: redirections are applied left to right, so with
+  # `>/dev/tty 2>/dev/null` the tty open fails while stderr is still the real
+  # stderr and the shell leaks "/dev/tty: No such device" before the caller
+  # gets a chance to print its own message.
+  printf '%s' "$msg" 2>/dev/null >/dev/tty || return 1
+  # Default IFS on purpose, NOT `IFS=`: it makes `read` trim leading/trailing
+  # whitespace, which every `read -rp` call site replaced here relied on. A pasted
+  # " y " must still match the `case ... in y|Y|yes|YES)` patterns instead of
+  # silently falling through to "no", and a root path must not be persisted to the
+  # config with stray spaces around it.
+  read -r ans 2>/dev/null </dev/tty || return 1
+  printf '%s\n' "$ans"
+}
 
 # Resolve the repo top-level from a path (arg) or $PWD. Works from inside the
 # main checkout or any linked worktree.
@@ -99,7 +126,7 @@ wt_get_root() {
     root=$(grep -E "^${key}=" "$WT_CONFIG_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
   fi
   if [ -z "$root" ]; then
-    read -rp "wt: no worktree root configured for linux — enter the root (worktrees go under {root}/worktrees/{repo}/{branch}): " root </dev/tty \
+    root=$(wt_prompt "wt: no worktree root configured for linux — enter the root (worktrees go under {root}/worktrees/{repo}/{branch}): ") \
       || { wt_die "aborted"; return 1; }
     [ -n "$root" ] || { wt_die "no root provided"; return 1; }
     mkdir -p "$(dirname "$WT_CONFIG_FILE")"
@@ -231,10 +258,10 @@ wt_choose_branch() {
     i=$((i+1))
   done
   local sel
-  read -rp "#? [$def] " sel </dev/tty || return 1
+  sel=$(wt_prompt "#? [$def] ") || return 1
   [ -z "$sel" ] && sel="$def"
   [[ "$sel" =~ ^[0-9]+$ ]] && [ "$sel" -ge 1 ] && [ "$sel" -le "${#branches[@]}" ] || return 1
-  echo "${branches[$((sel-1))]}"
+  echo "${branches[$((sel - 1 + WT_ARRAY_BASE))]}"
 }
 
 wt_new() {
@@ -310,7 +337,7 @@ wt_rm() {
       *)  pos+=("$a");;
     esac
   done
-  local branch="${pos[0]:-}"
+  local branch="${pos[$WT_ARRAY_BASE]:-}"
   [ -n "$branch" ] || { wt_die "usage: wtrm <branch> [--force]"; return 1; }
   local repo; repo=$(wt_resolve_repo) || return 1
 
@@ -357,7 +384,7 @@ wt_rm() {
   fi
 
   if [ "$force" -ne 1 ]; then
-    local ans; read -rp "Remove this worktree? [y/N] " ans </dev/tty || { wt_die "aborted"; return 1; }
+    local ans; ans=$(wt_prompt "Remove this worktree? [y/N] ") || { wt_die "aborted"; return 1; }
     case "$ans" in y|Y|yes|YES) ;; *) wt_die "aborted"; return 1;; esac
   fi
 
@@ -371,7 +398,7 @@ wt_rm() {
     if [ "$force" -eq 1 ]; then
       git -C "$repo" branch -d "$branch" 2>/dev/null && echo "Deleted merged branch '$branch'."
     else
-      local ans2=n; read -rp "Also delete local branch '$branch' (merged)? [y/N] " ans2 </dev/tty || ans2=n
+      local ans2; ans2=$(wt_prompt "Also delete local branch '$branch' (merged)? [y/N] ") || ans2=n
       case "$ans2" in y|Y|yes|YES) git -C "$repo" branch -d "$branch" && echo "Deleted branch '$branch'.";; esac
     fi
   elif [ "$force" -eq 1 ]; then
