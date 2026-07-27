@@ -119,41 +119,99 @@ wt_sync_state() {
   else                                         echo "ahead $a, behind $b"; fi
 }
 
+# Validate and normalize a worktree root, printing the clean value on stdout.
+# $2 names where the value came from and $3 says how to fix it, because the two
+# callers need different advice: you retype a prompt answer, but you edit a
+# stored one.
+#
+# Every worktree path is built from this value, so a bad one is not a one-off
+# typo -- it misplaces every worktree created afterwards. Two failure modes have
+# actually happened: a pasted bracketed-paste marker plus prompt glyph
+# ("^[[200~❯ pwd"), and a relative path, which `git worktree add` resolves
+# against $PWD and so buries the worktree inside whatever repo you were in.
+wt_validate_root() {
+  local root="$1" origin="$2" fix="$3"
+  # Expand ~ before the absolute check below, which would otherwise reject it.
+  case "$root" in
+    "~") root="$HOME" ;;
+    "~/"*) root="$HOME/${root#\~/}" ;;
+  esac
+  # Control characters mean it was pasted, not typed: terminals wrap pasted text
+  # in ESC[200~ / ESC[201~ and that ESC ends up in the value.
+  case "$root" in
+    *[[:cntrl:]]*)
+      wt_die "worktree root from $origin contains control characters (paste artifact?) — $fix"
+      return 1 ;;
+  esac
+  case "$root" in
+    /*) ;;
+    *) wt_die "worktree root from $origin must be an absolute path, got '$root' — $fix"; return 1 ;;
+  esac
+  # Drop trailing slashes so built paths don't come out as "/home/me//worktrees/..."
+  while [ "$root" != "/" ] && [ "${root%/}" != "$root" ]; do root="${root%/}"; done
+  printf '%s\n' "$root"
+}
+
+# Set key=value in the config, treating the value as pure data, and publish it
+# with a single atomic rename.
+#
+# NOT `sed -i "s#^${key}=.*#${key}=${value}#"`: sed reads its own metacharacters
+# out of the interpolated value. Verified -- a root of "/tmp/a&b" persisted as
+# "linux_root=/tmp/alinux_root=/oldb" (& expands to the whole match), and
+# "/tmp/a#b" closed the s/// early and made sed exit non-zero while the caller
+# never checked the status.
+wt_write_config_key() {
+  local key="$1" value="$2" file="$3" dir tmp line out="" found=0
+  dir=$(dirname "$file")
+  mkdir -p "$dir" || return 1
+  # mktemp, NOT "$file.tmp.$$": a predictable name in a writable directory is a
+  # symlink target, and the redirection below would follow it and clobber
+  # whatever it points at.
+  tmp=$(mktemp "$dir/.wt-config.XXXXXX") || return 1
+  # Carry the original's mode over. This replaces the file wholesale, whereas
+  # `sed -i` edited in place and kept the mode; a fresh mktemp file is 0600, so
+  # without this a deliberately-relaxed (or tightened) config would silently
+  # change permissions on every update.
+  [ -f "$file" ] && chmod --reference="$file" "$tmp" 2>/dev/null
+  if [ -f "$file" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        "$key="*) out="${out}${key}=${value}"$'\n'; found=1 ;;
+        *)        out="${out}${line}"$'\n' ;;
+      esac
+    done < "$file"
+  fi
+  [ "$found" -eq 1 ] || out="${out}${key}=${value}"$'\n'
+  # Build the whole file in memory and write ONCE, so there is a single status to
+  # check. Appending per line left no way to notice a mid-loop failure (a full
+  # disk), and `mv` needs no free space -- it would have cheerfully published a
+  # truncated config over a good one.
+  printf '%s' "$out" > "$tmp" || { rm -f "$tmp"; return 1; }
+  mv "$tmp" "$file" || { rm -f "$tmp"; return 1; }
+}
+
 # Read this OS's root from the deployed config, prompting and persisting on first run.
 wt_get_root() {
-  local key="linux_root" root=""
+  local key="linux_root" raw="" root=""
   if [ -f "$WT_CONFIG_FILE" ]; then
-    root=$(grep -E "^${key}=" "$WT_CONFIG_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
+    raw=$(grep -E "^${key}=" "$WT_CONFIG_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
   fi
-  if [ -z "$root" ]; then
-    root=$(wt_prompt "wt: no worktree root configured for linux — enter the root (worktrees go under {root}/worktrees/{repo}/{branch}): ") \
-      || { wt_die "aborted"; return 1; }
-    [ -n "$root" ] || { wt_die "no root provided"; return 1; }
-    # Validate BEFORE persisting. This answer is written to the config and then
-    # used to build every future worktree path, so garbage here is not a one-off
-    # typo -- it silently poisons every later wtnew. Two real failure modes seen:
-    # a pasted bracketed-paste marker plus prompt character ("^[[200~❯ pwd"), and
-    # a relative path, which `git worktree add` resolves against $PWD and buries
-    # the worktree inside whatever repo you happened to be standing in.
-    case "$root" in
-      "~") root="$HOME" ;;
-      "~/"*) root="$HOME/${root#\~/}" ;;
-    esac
-    case "$root" in
-      *[[:cntrl:]]*) wt_die "root contains control characters (paste artifact?); type it by hand"; return 1 ;;
-    esac
-    case "$root" in
-      /*) ;;
-      *) wt_die "root must be an absolute path, got '$root'"; return 1 ;;
-    esac
-    mkdir -p "$(dirname "$WT_CONFIG_FILE")"
-    if [ -f "$WT_CONFIG_FILE" ] && grep -q "^${key}=" "$WT_CONFIG_FILE"; then
-      sed -i "s#^${key}=.*#${key}=${root}#" "$WT_CONFIG_FILE"
-    else
-      printf '%s=%s\n' "$key" "$root" >> "$WT_CONFIG_FILE"
-    fi
+  if [ -n "$raw" ]; then
+    # Validate on READ as well as on write. A stored root may predate this
+    # check, have been hand-edited, or have arrived via sync-from-system.sh --
+    # and an unvalidated stored root is exactly what put a worktree inside the
+    # repo instead of under the root. The message names the file to edit.
+    root=$(wt_validate_root "$raw" "$WT_CONFIG_FILE" "edit or delete that ${key}= line") || return 1
+    printf '%s\n' "$root"
+    return 0
   fi
-  echo "$root"
+  raw=$(wt_prompt "wt: no worktree root configured for linux — enter the root (worktrees go under {root}/worktrees/{repo}/{branch}): ") \
+    || { wt_die "aborted"; return 1; }
+  [ -n "$raw" ] || { wt_die "no root provided"; return 1; }
+  root=$(wt_validate_root "$raw" "your answer" "type it by hand instead of pasting") || return 1
+  wt_write_config_key "$key" "$root" "$WT_CONFIG_FILE" \
+    || { wt_die "failed to persist root to '$WT_CONFIG_FILE'"; return 1; }
+  printf '%s\n' "$root"
 }
 
 # Locate a branch's worktree path via `git worktree list --porcelain`.
@@ -200,16 +258,23 @@ wt_ls() {
   # them to stdout on the second and later iterations -- it does not
   # re-initialize them the way bash does, it just echoes them. Declaring
   # once and only assigning inside the loop avoids the dump entirely.
-  local disp_branch from head state sync pr mark display_path
+  local disp_branch from head state sync pr mark display_path prunable
   {
     printf '\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "BRANCH" "FROM" "HEAD" "STATE" "SYNC" "PR" "PATH"
     git -C "$repo" worktree list --porcelain | awk '
       # substr, NOT $2: worktree paths may contain spaces (see wt_find_path).
-      /^worktree /{ if (p!="") print p"\t"b; p=substr($0, 10); b="" }
+      # `prunable` is carried through too: git emits it for a registration whose
+      # gitdir points nowhere, and without it such a row used to render as an
+      # ordinary "clean" worktree -- so a broken entry stayed invisible until
+      # some command that touched it failed. Named `st`, not `pr`: this function
+      # already has a shell variable `pr` holding the GitHub PR state, and two
+      # unrelated `pr`s in one function is a trap for whoever edits next.
+      /^worktree /{ if (p!="") print p"\t"b"\t"st; p=substr($0, 10); b=""; st="" }
       /^branch /{ b=$2; sub("refs/heads/","",b) }
       /^detached$/{ b="null" }
-      END{ if (p!="") print p"\t"b }
-    ' | while IFS=$'\t' read -r wtpath branch; do
+      /^prunable/{ st="stale" }
+      END{ if (p!="") print p"\t"b"\t"st }
+    ' | while IFS=$'\t' read -r wtpath branch prunable; do
         [ -n "$branch" ] || branch="null"
         # NEVER name a local var `path` here: zsh ties the lowercase `path`
         # array to `$PATH`, so assigning it silently rewrites PATH for the
@@ -218,7 +283,12 @@ wt_ls() {
         [ "$branch" = "null" ] && disp_branch="(detached)"
         from=$(wt_detect_from "$wtpath" "$branch")
         head=$(git -C "$wtpath" rev-parse --short HEAD 2>/dev/null || echo "-")
-        if [ -n "$(git -C "$wtpath" status --porcelain 2>/dev/null)" ]; then state="dirty"; else state="clean"; fi
+        # "stale" must win: for a prunable entry the directory is gone, so the
+        # status call below fails, the substitution comes back empty, and the row
+        # would otherwise claim "clean" -- the most misleading answer possible.
+        if [ -n "$prunable" ]; then state="stale"
+        elif [ -n "$(git -C "$wtpath" status --porcelain 2>/dev/null)" ]; then state="dirty"
+        else state="clean"; fi
         sync=$(wt_sync_state "$wtpath")
         pr="${PRMAP[$branch]:-none}"
         mark=""; [ -n "$cur_top" ] && [ "$wtpath" = "$cur_top" ] && mark="*"
@@ -239,7 +309,7 @@ wt_ls() {
             val = cell[r,i]
             attn = 0
             if (isrow){
-              if      (i==5 && val ~ /dirty/)          attn=1   # STATE
+              if      (i==5 && val ~ /dirty|stale/)    attn=1   # STATE
               else if (i==6 && val ~ /^(ahead|behind)/) attn=1  # SYNC
               else if (i==7 && val ~ /OPEN/)           attn=1  # PR
             }
@@ -259,6 +329,7 @@ wt_ls() {
   echo "  *          the worktree you are currently in"
   echo "  FROM       branch it was created from   ((base) = integration branch, e.g. develop/main)"
   echo "  STATE      clean = no local changes  |  dirty = uncommitted changes"
+  echo "             stale = registered but its directory is gone; clean up with 'git worktree prune'"
   echo "  SYNC       vs its remote upstream: synced | ahead N | behind N | ahead N, behind M"
   echo "             local-only = branch never pushed (no upstream to compare against)"
   echo "  PR         GitHub pull request state (none = no PR for this branch)"
@@ -293,27 +364,52 @@ wt_new() {
 
   local repo; repo=$(wt_resolve_repo) || return 1
 
-  # Refuse to clobber an existing branch -- that's wtopen's job.
+  # An existing branch is two very different situations, and conflating them used
+  # to dead-end the user: wtopen said "create it with wtnew" while wtnew said
+  # "already exists -- use wtopen", so a branch whose worktree had been removed
+  # could never get one back. Only refuse when a worktree actually exists.
+  local reattach=0 existing=""
   if git -C "$repo" show-ref --verify --quiet "refs/heads/$name"; then
-    wt_die "branch '$name' already exists — use 'wtopen $name' to open its worktree"; return 1
+    existing=$(wt_find_path "$repo" "$name")
+    if [ -n "$existing" ] && [ -d "$existing" ]; then
+      wt_die "branch '$name' already has a worktree — use 'wtopen $name'"; return 1
+    fi
+    if [ -n "$existing" ]; then
+      # Registered but the directory is gone -- what wtls shows as STATE stale.
+      # Sending the user to wtopen here would just fail at the cd, so drop the
+      # dead registration; git otherwise still thinks the branch is checked out
+      # there and refuses to attach it anywhere else.
+      echo "note: clearing stale worktree registration for '$name' (${existing/#$HOME/\~})."
+      git -C "$repo" worktree prune
+    fi
+    reattach=1
   fi
 
-  # Pick the source branch interactively when not given.
-  if [ -z "$from" ]; then
-    from=$(wt_choose_branch "$repo") || { wt_die "no source branch selected; aborted"; return 1; }
-  fi
-  git -C "$repo" show-ref --verify --quiet "refs/heads/$from" \
-    || git -C "$repo" show-ref --verify --quiet "refs/remotes/origin/$from" \
-    || { wt_die "source branch '$from' not found (local or origin/)"; return 1; }
-
-  # Always start from the latest: fetch the source branch and fork from origin/<from>.
-  # Fall back to the local ref if there is no remote branch or the network is down.
   local baseref="$from"
-  if git -C "$repo" fetch origin "$from" >/dev/null 2>&1; then
-    baseref="origin/$from"
-    echo "Fetched latest origin/$from."
+  if [ "$reattach" -eq 1 ]; then
+    # Re-attaching: the branch already carries its history, so there is nothing
+    # to fork from and nothing to fetch. Ignore any base argument rather than
+    # pretend it was used.
+    [ -n "$from" ] && echo "note: branch '$name' already exists; re-attaching a worktree and ignoring base '$from'." >&2
+    from=""
   else
-    echo "note: could not fetch origin/$from; starting from local '$from'." >&2
+    # Pick the source branch interactively when not given.
+    if [ -z "$from" ]; then
+      from=$(wt_choose_branch "$repo") || { wt_die "no source branch selected; aborted"; return 1; }
+    fi
+    git -C "$repo" show-ref --verify --quiet "refs/heads/$from" \
+      || git -C "$repo" show-ref --verify --quiet "refs/remotes/origin/$from" \
+      || { wt_die "source branch '$from' not found (local or origin/)"; return 1; }
+
+    # Always start from the latest: fetch the source branch and fork from origin/<from>.
+    # Fall back to the local ref if there is no remote branch or the network is down.
+    baseref="$from"
+    if git -C "$repo" fetch origin "$from" >/dev/null 2>&1; then
+      baseref="origin/$from"
+      echo "Fetched latest origin/$from."
+    else
+      echo "note: could not fetch origin/$from; starting from local '$from'." >&2
+    fi
   fi
 
   local root; root=$(wt_get_root) || return 1
@@ -323,6 +419,13 @@ wt_new() {
   local wtpath="$root/worktrees/$reponame/$name"
 
   mkdir -p "$(dirname "$wtpath")" || { wt_die "failed to create parent directory for '$wtpath'"; return 1; }
+
+  if [ "$reattach" -eq 1 ]; then
+    # No -b: check the existing branch out instead of creating it.
+    git -C "$repo" worktree add "$wtpath" "$name" || { wt_die "git worktree add failed"; return 1; }
+    echo "Re-attached worktree for existing branch '$name'  ->  ${wtpath/#$HOME/\~}"
+    return 0
+  fi
 
   git -C "$repo" worktree add "$wtpath" -b "$name" "$baseref" || { wt_die "git worktree add failed"; return 1; }
   # Record the real parent (local-only git config, never pushed -- see
@@ -410,8 +513,21 @@ wt_rm() {
     case "$ans" in y|Y|yes|YES) ;; *) wt_die "aborted"; return 1;; esac
   fi
 
-  if [ "$force" -eq 1 ]; then git -C "$repo" worktree remove --force "$wtpath" 2>/dev/null || true
-  else git -C "$repo" worktree remove "$wtpath" 2>/dev/null || true; fi
+  # Check that the removal actually worked before claiming it did -- and, more
+  # importantly, before the branch deletion below. These calls used to be
+  # `2>/dev/null || true` with the status discarded, so a locked worktree or a
+  # permission error still printed "Removed" and then deleted the branch,
+  # leaving the directory on disk with nothing pointing at it.
+  local rm_out rm_rc
+  if [ "$force" -eq 1 ]; then
+    rm_out=$(git -C "$repo" worktree remove --force "$wtpath" 2>&1); rm_rc=$?
+  else
+    rm_out=$(git -C "$repo" worktree remove "$wtpath" 2>&1); rm_rc=$?
+  fi
+  if [ "$rm_rc" -ne 0 ]; then
+    wt_die "git worktree remove failed, so branch '$branch' was kept: ${rm_out:-unknown error}"
+    return 1
+  fi
   git -C "$repo" worktree prune 2>/dev/null || true
   echo "Removed worktree '$branch'."
 
