@@ -129,6 +129,23 @@ wt_get_root() {
     root=$(wt_prompt "wt: no worktree root configured for linux — enter the root (worktrees go under {root}/worktrees/{repo}/{branch}): ") \
       || { wt_die "aborted"; return 1; }
     [ -n "$root" ] || { wt_die "no root provided"; return 1; }
+    # Validate BEFORE persisting. This answer is written to the config and then
+    # used to build every future worktree path, so garbage here is not a one-off
+    # typo -- it silently poisons every later wtnew. Two real failure modes seen:
+    # a pasted bracketed-paste marker plus prompt character ("^[[200~❯ pwd"), and
+    # a relative path, which `git worktree add` resolves against $PWD and buries
+    # the worktree inside whatever repo you happened to be standing in.
+    case "$root" in
+      "~") root="$HOME" ;;
+      "~/"*) root="$HOME/${root#\~/}" ;;
+    esac
+    case "$root" in
+      *[[:cntrl:]]*) wt_die "root contains control characters (paste artifact?); type it by hand"; return 1 ;;
+    esac
+    case "$root" in
+      /*) ;;
+      *) wt_die "root must be an absolute path, got '$root'"; return 1 ;;
+    esac
     mkdir -p "$(dirname "$WT_CONFIG_FILE")"
     if [ -f "$WT_CONFIG_FILE" ] && grep -q "^${key}=" "$WT_CONFIG_FILE"; then
       sed -i "s#^${key}=.*#${key}=${root}#" "$WT_CONFIG_FILE"
@@ -143,7 +160,11 @@ wt_get_root() {
 wt_find_path() {
   local repo="$1" branch="$2"
   git -C "$repo" worktree list --porcelain | awk -v b="$branch" '
-    /^worktree /{ p=$2 }
+    # substr, NOT $2: a worktree path may contain SPACES, and $2 would silently
+    # truncate it at the first one, handing the caller a path that does not exist.
+    # "worktree " is 9 characters, so the path starts at column 10. Branch names
+    # cannot contain spaces (git check-ref-format forbids them), so $2 is safe there.
+    /^worktree /{ p=substr($0, 10) }
     /^branch /{ br=$2; sub("refs/heads/","",br); if (br==b) { print p; exit } }
   '
 }
@@ -183,7 +204,8 @@ wt_ls() {
   {
     printf '\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "BRANCH" "FROM" "HEAD" "STATE" "SYNC" "PR" "PATH"
     git -C "$repo" worktree list --porcelain | awk '
-      /^worktree /{ if (p!="") print p"\t"b; p=$2; b="" }
+      # substr, NOT $2: worktree paths may contain spaces (see wt_find_path).
+      /^worktree /{ if (p!="") print p"\t"b; p=substr($0, 10); b="" }
       /^branch /{ b=$2; sub("refs/heads/","",b) }
       /^detached$/{ b="null" }
       END{ if (p!="") print p"\t"b }
