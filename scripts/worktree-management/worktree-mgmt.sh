@@ -497,6 +497,22 @@ wt_new() {
   # wt_detect_from) so `wtls`'s FROM column shows it even when it's another
   # feature branch, not just one of develop/main/master.
   git -C "$repo" config "branch.$name.wt-parent" "$from"
+
+  # First push: publish the branch to origin right away so it exists remotely
+  # before any commit, and set the upstream so `wtls`'s SYNC column shows
+  # "synced" instead of "local-only". The worktree is already created, so a
+  # failed push (no origin, no network) is a note, not a failure.
+  local push_out=""
+  if git -C "$repo" remote get-url origin >/dev/null 2>&1; then
+    if push_out=$(git -C "$repo" push -u origin "$name" 2>&1); then
+      echo "Pushed '$name' to origin."
+    else
+      echo "note: could not push '$name' to origin (worktree created anyway):" >&2
+      echo "      ${push_out:-unknown error}" >&2
+    fi
+  else
+    echo "note: no 'origin' remote; skipped initial push." >&2
+  fi
   echo "Created worktree '$name' from '$from'  ->  ${wtpath/#$HOME/\~}"
 }
 
@@ -597,17 +613,58 @@ wt_rm() {
   echo "Removed worktree '$branch'."
 
   # Local branch: safe -d when merged; -D only with --force when not merged.
+  local branch_deleted=0
   if [ "$merged" = "yes" ]; then
     if [ "$force" -eq 1 ]; then
-      git -C "$repo" branch -d "$branch" 2>/dev/null && echo "Deleted merged branch '$branch'."
+      git -C "$repo" branch -d "$branch" 2>/dev/null && { echo "Deleted merged branch '$branch'."; branch_deleted=1; }
     else
       local ans2; ans2=$(wt_prompt "Also delete local branch '$branch' (merged)? [y/N] ") || ans2=n
-      case "$ans2" in y|Y|yes|YES) git -C "$repo" branch -d "$branch" && echo "Deleted branch '$branch'.";; esac
+      case "$ans2" in
+        y|Y|yes|YES) git -C "$repo" branch -d "$branch" && { echo "Deleted branch '$branch'."; branch_deleted=1; };;
+      esac
     fi
   elif [ "$force" -eq 1 ]; then
-    git -C "$repo" branch -D "$branch" 2>/dev/null && echo "Force-deleted unmerged branch '$branch'."
+    git -C "$repo" branch -D "$branch" 2>/dev/null && { echo "Force-deleted unmerged branch '$branch'."; branch_deleted=1; }
   else
     echo "Kept local branch '$branch'."
+  fi
+
+  # The local branch is gone but it may still live on origin (this script never
+  # touches the remote). Offer to delete it there too -- only when it's merged,
+  # so no history is lost, and only if the local branch was actually deleted.
+  if [ "$branch_deleted" -eq 1 ] && [ "$merged" = "yes" ] \
+     && git -C "$repo" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    local ans3=yes
+    if [ "$force" -ne 1 ]; then
+      ans3=$(wt_prompt "Delete '$branch' on origin too? This removes the branch from the shared copy of the project on the server, so it stops existing for the whole team. [y/N] ") || ans3=n
+    fi
+    case "$ans3" in
+      y|Y|yes|YES)
+        if git -C "$repo" push origin --delete "$branch" >/dev/null 2>&1; then
+          echo "Deleted remote branch 'origin/$branch'."
+        else
+          echo "note: could not delete 'origin/$branch' (no network, or already gone)." >&2
+        fi ;;
+    esac
+  fi
+
+  # Offer to prune stale remote-tracking refs: local copies of branches that no
+  # longer exist on origin keep showing up in `wtls` and `git branch -r` until a
+  # fetch --prune forgets them. Non-destructive to your work -- it only drops the
+  # outdated bookkeeping, never your commits.
+  if [ "$branch_deleted" -eq 1 ]; then
+    local ans4=yes
+    if [ "$force" -ne 1 ]; then
+      ans4=$(wt_prompt "Also clean up stale remote branch references? This removes the outdated local copies of branches that no longer exist on the server (deleted by you or anyone else), so your branch list only shows what is really there. [y/N] ") || ans4=n
+    fi
+    case "$ans4" in
+      y|Y|yes|YES)
+        if git -C "$repo" fetch --prune origin >/dev/null 2>&1; then
+          echo "Pruned stale remote-tracking branches."
+        else
+          echo "note: could not prune remote-tracking branches (no network?)." >&2
+        fi ;;
+    esac
   fi
 }
 

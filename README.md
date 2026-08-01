@@ -182,6 +182,16 @@ to pull that value back into the repo — once both keys are committed, a
 fresh machine gets both pre-seeded by `apply-to-system.sh` and never has to
 prompt again.
 
+`wtnew` does a first `git push -u origin <branch>` so the new branch exists on
+the remote right away (and `wtls` shows `synced` instead of `local-only`). If
+the push fails or the repo has no `origin`, the worktree is still created and a
+note explains how to push manually.
+
+`wtrm` removes the worktree and offers to finish the cleanup once the local
+branch is deleted: deleting the branch on `origin` too (only when it's merged),
+and pruning stale remote-tracking refs via `git fetch --prune origin`. Each
+offer explains what it does in plain terms and is skipped under `--force`.
+
 Like `herdr-wt.ps1`, the PowerShell side (`worktree-mgmt.ps1`) is dot-sourced
 from the PS7 profile only — `wtopen` needs `Set-Location` to run in the
 interactive session, not a subprocess. The bash side (`worktree-mgmt.sh`) is

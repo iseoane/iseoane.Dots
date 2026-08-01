@@ -355,6 +355,22 @@ function Invoke-WtNew {
     # another feature branch, not just one of develop/main/master.
     git -C $repo config "branch.$name.wt-parent" $from | Out-Null
 
+    # First push: publish the branch to origin right away so it exists remotely
+    # before any commit, and set the upstream so `wtls`'s SYNC column shows
+    # "synced" instead of "local-only". The worktree is already created, so a
+    # failed push (no origin, no network) is a note, not a failure.
+    git -C $repo remote get-url origin *> $null
+    if ($LASTEXITCODE -eq 0) {
+        $pushOut = git -C $repo push -u origin $name 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Pushed '$name' to origin."
+        } else {
+            [Console]::Error.WriteLine("note: could not push '$name' to origin (worktree created anyway): $pushOut")
+        }
+    } else {
+        [Console]::Error.WriteLine("note: no 'origin' remote; skipped initial push.")
+    }
+
     Write-Host "Created worktree '$name' from '$from'  ->  $(Format-WtPath $path)"
 }
 
@@ -472,21 +488,56 @@ function Invoke-WtRm {
     git -C $repo worktree prune 2>$null
     Write-Host "Removed worktree '$branch'."
 
+    $branchDeleted = $false
     if ($merged -eq 'yes') {
         if ($force) {
             git -C $repo branch -d $branch 2>$null
-            if ($LASTEXITCODE -eq 0) { Write-Host "Deleted merged branch '$branch'." }
+            if ($LASTEXITCODE -eq 0) { Write-Host "Deleted merged branch '$branch'."; $branchDeleted = $true }
         } else {
             $ans2 = Read-Host "Also delete local branch '$branch' (merged)? [y/N]"
             if ($ans2 -match '^(y|yes)$') {
                 git -C $repo branch -d $branch
-                if ($LASTEXITCODE -eq 0) { Write-Host "Deleted branch '$branch'." }
+                if ($LASTEXITCODE -eq 0) { Write-Host "Deleted branch '$branch'."; $branchDeleted = $true }
             }
         }
     } elseif ($force) {
         git -C $repo branch -D $branch 2>$null
-        if ($LASTEXITCODE -eq 0) { Write-Host "Force-deleted unmerged branch '$branch'." }
+        if ($LASTEXITCODE -eq 0) { Write-Host "Force-deleted unmerged branch '$branch'."; $branchDeleted = $true }
     } else {
         Write-Host "Kept local branch '$branch'."
+    }
+
+    # The local branch is gone but it may still live on origin (this script never
+    # touches the remote). Offer to delete it there too -- only when it's merged,
+    # so no history is lost, and only if the local branch was actually deleted.
+    if ($branchDeleted -and $merged -eq 'yes') {
+        git -C $repo show-ref --verify --quiet "refs/remotes/origin/$branch" *> $null
+        if ($LASTEXITCODE -eq 0) {
+            $ans3 = 'yes'
+            if (-not $force) {
+                $ans3 = Read-Host "Delete '$branch' on origin too? This removes the branch from the shared copy of the project on the server, so it stops existing for the whole team. [y/N]"
+            }
+            if ($ans3 -match '^(y|yes)$') {
+                git -C $repo push origin --delete $branch *> $null
+                if ($LASTEXITCODE -eq 0) { Write-Host "Deleted remote branch 'origin/$branch'." }
+                else { [Console]::Error.WriteLine("note: could not delete 'origin/$branch' (no network, or already gone).") }
+            }
+        }
+    }
+
+    # Offer to prune stale remote-tracking refs: local copies of branches that no
+    # longer exist on origin keep showing up in `wtls` and `git branch -r` until a
+    # fetch --prune forgets them. Non-destructive to your work -- it only drops the
+    # outdated bookkeeping, never your commits.
+    if ($branchDeleted) {
+        $ans4 = 'yes'
+        if (-not $force) {
+            $ans4 = Read-Host "Also clean up stale remote branch references? This removes the outdated local copies of branches that no longer exist on the server (deleted by you or anyone else), so your branch list only shows what is really there. [y/N]"
+        }
+        if ($ans4 -match '^(y|yes)$') {
+            git -C $repo fetch --prune origin *> $null
+            if ($LASTEXITCODE -eq 0) { Write-Host "Pruned stale remote-tracking branches." }
+            else { [Console]::Error.WriteLine("note: could not prune remote-tracking branches (no network?).") }
+        }
     }
 }
