@@ -196,7 +196,21 @@ prompt again.
 `wtnew` does a first `git push -u origin <branch>` so the new branch exists on
 the remote right away (and `wtls` shows `synced` instead of `local-only`). If
 the push fails or the repo has no `origin`, the worktree is still created and a
-note explains how to push manually.
+note explains how to push manually. When the base is another feature branch,
+`wtnew` prints the resulting stack chain (walking the recorded `wt-parent`
+links) and warns that the base is not yet merged — so the new branch's PR will
+be stacked on the base's PR and must merge bottom-up, never opened against
+`main`.
+
+`wtls` shows one row per worktree with the branch, its fork parent (FROM), the
+PR state **and the base that PR opens against** (`#50 OPEN→phase3`), plus the
+PR's own diff (commits/additions/deletions). Three stack anomalies are flagged
+with a red `⚠`: a PR whose base is not the branch's parent (it is replaying the
+parent's commits — with `(propios N)` showing what is actually this branch's
+own work), a duplicate branch pointing at the same commit as another, and a
+branch with unmerged work but no PR at all. FROM falls back to a
+nearest-ancestor autodetect across all local branches when no `wt-parent` is
+recorded.
 
 `wtrm` removes the worktree and offers to finish the cleanup once the local
 branch is deleted: deleting the branch on `origin` too (only when it's merged),

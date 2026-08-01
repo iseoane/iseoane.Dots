@@ -79,8 +79,8 @@ wt_origin_slug() {
 # The base a branch was created from: prefer the parent `wtnew` recorded at
 # creation time (`branch.<name>.wt-parent`, local-only git config -- see
 # wt_new), since that's the true parent even when it's another feature
-# branch. Falls back to the develop/main/master autodetect heuristic below
-# for branches wtnew didn't create (or created before this existed).
+# branch. Falls back to the nearest-ancestor autodetect heuristic below for
+# branches wtnew didn't create (or created before this existed).
 # Integration branches themselves return "(base)".
 wt_detect_from() {
   local wt="$1" branch="$2"
@@ -90,18 +90,28 @@ wt_detect_from() {
   esac
   local recorded; recorded=$(git -C "$wt" config "branch.$branch.wt-parent" 2>/dev/null)
   [ -n "$recorded" ] && { echo "$recorded"; return; }
-  local best="" best_ahead=-1 base ref mb ahead
-  for base in develop main master; do
-    ref=""
-    if git -C "$wt" rev-parse --verify --quiet "$base" >/dev/null 2>&1; then ref="$base"
-    elif git -C "$wt" rev-parse --verify --quiet "origin/$base" >/dev/null 2>&1; then ref="origin/$base"
-    else continue; fi
-    mb=$(git -C "$wt" merge-base "$ref" "$branch" 2>/dev/null) || continue
+
+  # Fallback heuristic: the nearest ANCESTOR branch among ALL local branches,
+  # not just develop/main/master. The true fork parent is the ancestor with
+  # the fewest commits between it and HEAD -- the same rule the push-pr skill
+  # uses. Ties (sibling branches forked from the same parent) break toward the
+  # branch whose merge-base is more recent, i.e. the one closest to HEAD.
+  # Without this, a stacked branch with a lost wt-parent used to report
+  # FROM=main, hiding the real chain.
+  local best="" best_ahead=-1 best_time=0 b mb ahead mb_time line
+  while IFS= read -r line; do
+    b="${line%%	*}"
+    [ -n "$b" ] || continue
+    [ "$b" = "$branch" ] && continue
+    if ! git -C "$wt" merge-base --is-ancestor "$b" "$branch" >/dev/null 2>&1; then continue; fi
+    mb=$(git -C "$wt" merge-base "$b" "$branch" 2>/dev/null) || continue
     ahead=$(git -C "$wt" rev-list --count "$mb".."$branch" 2>/dev/null) || continue
-    if [ "$best_ahead" -lt 0 ] || [ "$ahead" -lt "$best_ahead" ]; then
-      best_ahead="$ahead"; best="$base"
+    mb_time=$(git -C "$wt" log -1 --format=%ct "$mb" 2>/dev/null) || mb_time=0
+    if [ "$best_ahead" -lt 0 ] || [ "$ahead" -lt "$best_ahead" ] \
+       || { [ "$ahead" -eq "$best_ahead" ] && [ "$mb_time" -gt "$best_time" ]; }; then
+      best_ahead="$ahead"; best="$b"; best_time="$mb_time"
     fi
-  done
+  done < <(git -C "$wt" for-each-ref --format='%(refname:short)' refs/heads/)
   echo "${best:--}"
 }
 
@@ -267,19 +277,37 @@ wt_ls() {
   porcelain=$(git -C "$repo" worktree list --porcelain) \
     || { wt_die "could not list worktrees in '$repo'"; return 1; }
 
-  # Build a PR lookup (branch -> "#N STATE"), single gh call. Optional.
-  declare -A PRMAP=()
+  # commit -> branch map (short hashes) to flag duplicate branches (two
+  # branches pointing at the same HEAD, e.g. a checkpoint branch).
+  declare -A COMMITMAP=()
+  local sha cb
+  # No quotes around the subscript: zsh (unlike bash) takes `MAP["$h"]`
+  # literally -- it stores the quote characters as PART of the key, so a
+  # later unquoted lookup like `${COMMITMAP[$head]}` never matches.
+  while IFS=' ' read -r sha cb; do
+    [ -n "$sha" ] && [ -n "$cb" ] && COMMITMAP[$sha]="$cb"
+  done < <(git -C "$repo" for-each-ref --format='%(objectname:short) %(refname:short)' refs/heads/)
+
+  # Build the PR lookup (branch -> "#N STATE→base") plus the PR's own diff
+  # (additions/deletions against ITS base). Single gh call. The base powers
+  # the "PR opens against the wrong base" warning: when it differs from the
+  # branch's parent (FROM), the PR is replaying the parent's commits.
+  # NOTE: `commits` is deliberately NOT requested from gh -- that field makes
+  # gh traverse the full commit/author connection and GraphQL blows up past
+  # the 500k-node cap on busy repos. The commit count is computed locally per
+  # row with rev-list instead (see below).
+  declare -A PRMAP=() PRBASEMAP=() PRDIFFMAP=()
   if command -v gh >/dev/null 2>&1; then
     local slug; slug=$(wt_origin_slug "$repo")
     if [ -n "$slug" ]; then
-      while IFS=$'\t' read -r h n s; do
-        # No quotes around the subscript: zsh (unlike bash) takes `MAP["$h"]`
-        # literally -- it stores the quote characters as PART of the key, so
-        # a later unquoted lookup like `${PRMAP[$branch]}` never matches.
-        [ -n "$h" ] && PRMAP[$h]="#$n $s"
+      while IFS=$'\t' read -r h n s base add del; do
+        [ -n "$h" ] || continue
+        PRMAP[$h]="#$n $s→$base"
+        PRBASEMAP[$h]="$base"
+        PRDIFFMAP[$h]="${add:-0}+/${del:-0}-"
       done < <(gh pr list --repo "$slug" --state all --limit 200 \
-                 --json number,state,headRefName \
-                 --jq 'sort_by(.number)[] | [.headRefName,.number,.state] | @tsv' 2>/dev/null)
+                 --json number,state,headRefName,baseRefName,additions,deletions \
+                 --jq 'sort_by(.number)[] | [.headRefName,.number,.state,.baseRefName,.additions,.deletions] | @tsv' 2>/dev/null)
     fi
   fi
 
@@ -293,9 +321,9 @@ wt_ls() {
   # them to stdout on the second and later iterations -- it does not
   # re-initialize them the way bash does, it just echoes them. Declaring
   # once and only assigning inside the loop avoids the dump entirely.
-  local disp_branch from head state sync pr mark display_path prunable
+  local disp_branch from head state sync pr pr_diff prbase prbase_ref prc dup warn own mark display_path prunable
   {
-    printf '\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "BRANCH" "FROM" "HEAD" "STATE" "SYNC" "PR" "PATH"
+    printf '\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "BRANCH" "FROM" "HEAD" "STATE" "SYNC" "PR" "PR DIFF" "PATH"
     printf '%s\n' "$porcelain" | awk '
       # substr, NOT $2: worktree paths may contain spaces (see wt_find_path).
       # `prunable` is carried through too: git emits it for a registration whose
@@ -325,13 +353,54 @@ wt_ls() {
         elif [ -n "$(git -C "$wtpath" status --porcelain 2>/dev/null)" ]; then state="dirty"
         else state="clean"; fi
         sync=$(wt_sync_state "$wtpath")
-        pr="${PRMAP[$branch]:-none}"
+        warn=""
+        pr="${PRMAP[$branch]:-}"
+        [ -n "$pr" ] || pr="none"
+        pr_diff="—"
+        # A branch whose HEAD matches another branch is a duplicate checkpoint,
+        # not a line of work of its own -- nothing to review or merge separately.
+        dup=""
+        if [ "$branch" != "null" ] && [ -n "$head" ] && [ "$head" != "-" ] \
+           && [ -n "${COMMITMAP[$head]:-}" ] && [ "${COMMITMAP[$head]}" != "$branch" ]; then
+          dup="=${COMMITMAP[$head]}"
+        fi
+        if [ "$pr" != "none" ]; then
+          # Commit count of the PR = commits in this branch not in its base
+          # (computed locally; gh's own field blows up GraphQL, see above).
+          pr_diff="${PRDIFFMAP[$branch]:-—}"
+          prbase="${PRBASEMAP[$branch]:-}"
+          prbase_ref=""
+          if [ -n "$prbase" ]; then
+            if git -C "$wtpath" rev-parse --verify --quiet "origin/$prbase" >/dev/null 2>&1; then prbase_ref="origin/$prbase"
+            elif git -C "$wtpath" rev-parse --verify --quiet "$prbase" >/dev/null 2>&1; then prbase_ref="$prbase"; fi
+          fi
+          if [ -n "$prbase_ref" ]; then
+            prc=$(git -C "$wtpath" rev-list --count "$prbase_ref".."$branch" 2>/dev/null || echo "?")
+          else
+            prc="?"
+          fi
+          pr_diff="${prc:-?}c/$pr_diff"
+          if [ -n "$from" ] && [ "$from" != "-" ] && [ "$prbase" != "$from" ]; then
+            # PR opens against a different base than the fork parent: GitHub is
+            # replaying the parent's commits on top of this branch's own. Show
+            # what the PR carries vs what is actually this branch's work.
+            own=$(git -C "$wtpath" rev-list --count "$from".."$branch" 2>/dev/null || echo "?")
+            pr_diff="$pr_diff (propios $own) ⚠"
+            pr="$pr ⚠"
+          fi
+        else
+          [ -n "$dup" ] && pr="none $dup ⚠"
+          if [ -z "$dup" ] && [ -n "$from" ] && [ "$from" != "-" ]; then
+            own=$(git -C "$wtpath" rev-list --count "$from".."$branch" 2>/dev/null || echo "0")
+            [ "$own" -gt 0 ] 2>/dev/null && { pr="no PR ⚠"; pr_diff="$own commits sueltos"; }
+          fi
+        fi
         mark=""; [ -n "$cur_top" ] && [ "$wtpath" = "$cur_top" ] && mark="*"
         display_path="${wtpath/#$HOME/\~}"
-        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-          "$mark" "$disp_branch" "$from" "$head" "$state" "$sync" "$pr" "$display_path"
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+          "$mark" "$disp_branch" "$from" "$head" "$state" "$sync" "$pr" "$pr_diff" "$display_path"
       done
-  } | awk -F'\t' -v BOLD="$BOLD" -v RED="$RED" -v BRED="$BRED" -v RST="$RST" '
+  } | awk -F'\t' -v BOLD="$BOLD" -v RED="$RED" -v BRED="$BRED" -v RST="$RST" -v WARN='⚠' '
       # Pass 1: store cells, track max width per column (plain text, no color).
       { for (i=1;i<=NF;i++){ cell[NR,i]=$i; if (length($i)>w[i]) w[i]=length($i) }
         if (NF>maxnf) maxnf=NF; nr=NR }
@@ -344,9 +413,10 @@ wt_ls() {
             val = cell[r,i]
             attn = 0
             if (isrow){
-              if      (i==5 && val ~ /dirty|stale/)    attn=1   # STATE
-              else if (i==6 && val ~ /^(ahead|behind)/) attn=1  # SYNC
-              else if (i==7 && val ~ /OPEN/)           attn=1  # PR
+              if      (i==5 && val ~ /dirty|stale/)      attn=1   # STATE
+              else if (i==6 && val ~ /^(ahead|behind)/)  attn=1   # SYNC
+              else if (i==7 && (val ~ /OPEN/ || index(val, WARN))) attn=1  # PR
+              else if (i==8 && index(val, WARN))         attn=1   # PR DIFF
             }
             pad = sprintf("%-*s", w[i], val)          # padding on plain text -> stays aligned
             col = ""
@@ -367,7 +437,13 @@ wt_ls() {
   echo "             stale = registered but its directory is gone; clean up with 'git worktree prune'"
   echo "  SYNC       vs its remote upstream: synced | ahead N | behind N | ahead N, behind M"
   echo "             local-only = branch never pushed (no upstream to compare against)"
-  echo "  PR         GitHub pull request state (none = no PR for this branch)"
+  echo "  PR         GitHub PR state and the base it opens against (#50 OPEN→phase3);"
+  echo "             'none =branch' = duplicate branch (same commit as another);"
+  echo "             'no PR' = work exists but no PR has been opened"
+  echo "  PR DIFF    the PR's own diff vs its base (commits/additions/deletions);"
+  echo "             '(propios N)' = commits that are actually this branch's own work"
+  echo "  ⚠          PR opens against a different base than the branch's parent, a duplicate"
+  echo "             branch, or a branch with unmerged work and no PR"
 }
 
 # Interactive picker: list local branches, mark the current one, return choice on stdout.
@@ -434,6 +510,25 @@ wt_new_resolve_existing() {
       || { wt_die "git worktree prune failed, so '$name' cannot be re-attached"; return 1; }
   fi
   echo "reattach"
+}
+
+# Walk the wt-parent chain upward from a branch, printing "main → a → b → c".
+# Pure bookkeeping read; guards against cycles with a seen-set and a depth cap.
+wt_chain() {
+  local repo="$1" branch="$2" acc="" seen="" n=0
+  while [ -n "$branch" ]; do
+    case " $seen " in *" $branch "*) break;; esac
+    seen="$seen $branch"
+    case "$branch" in
+      develop|main|master)
+        acc="$branch${acc:+ → $acc}"; branch="";;
+      *)
+        acc="${branch}${acc:+ → $acc}"
+        branch=$(git -C "$repo" config "branch.$branch.wt-parent" 2>/dev/null) || branch=""
+        n=$((n+1)); [ "$n" -gt 10 ] && branch="";;
+    esac
+  done
+  echo "$acc"
 }
 
 wt_new() {
@@ -514,6 +609,25 @@ wt_new() {
     echo "note: no 'origin' remote; skipped initial push." >&2
   fi
   echo "Created worktree '$name' from '$from'  ->  ${wtpath/#$HOME/\~}"
+
+  # Stack context: when the base is another feature branch, show the chain and
+  # warn that the PR for this branch will be stacked on the base's PR (it must
+  # merge bottom-up) rather than opened against main -- the decision that used
+  # to be taken silently.
+  case "$from" in
+    develop|main|master) ;;
+    *)
+      local integ=""
+      for base in main origin/main; do
+        if git -C "$repo" rev-parse --verify --quiet "$base" >/dev/null 2>&1; then integ="$base"; break; fi
+      done
+      if [ -n "$integ" ] && ! git -C "$repo" merge-base --is-ancestor "$from" "$integ" >/dev/null 2>&1; then
+        echo "note: base '$from' is NOT merged into $integ — the PR for '$name' will be stacked on '$from''s PR and must merge after it (bottom-up)." >&2
+      fi
+      local chain; chain=$(wt_chain "$repo" "$name")
+      [ -n "$chain" ] && echo "Stack: $chain"
+      ;;
+  esac
 }
 
 wt_open() {

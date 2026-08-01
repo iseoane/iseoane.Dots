@@ -76,7 +76,7 @@ function Get-WtOriginSlug {
 # The base a branch was created from: prefer the parent `wtnew` recorded at
 # creation time (`branch.<name>.wt-parent`, local-only git config -- see
 # Invoke-WtNew), since that's the true parent even when it's another
-# feature branch. Falls back to the develop/main/master autodetect heuristic
+# feature branch. Falls back to the nearest-ancestor autodetect heuristic
 # below for branches wtnew didn't create (or created before this existed).
 # Integration branches themselves return "(base)".
 function Get-WtDetectedFrom {
@@ -90,29 +90,36 @@ function Get-WtDetectedFrom {
     $recorded = git -C $Worktree config "branch.$Branch.wt-parent" 2>$null
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrEmpty($recorded)) { return $recorded }
 
+    # Fallback heuristic: the nearest ANCESTOR branch among ALL local branches,
+    # not just develop/main/master. The true fork parent is the ancestor with
+    # the fewest commits between it and HEAD -- the same rule the push-pr skill
+    # uses. Ties (sibling branches forked from the same parent) break toward the
+    # branch whose merge-base is more recent, i.e. the one closest to HEAD.
+    # Without this, a stacked branch with a lost wt-parent used to report
+    # FROM=main, hiding the real chain.
     $best = $null
     $bestAhead = -1
-    foreach ($base in @('develop', 'main', 'master')) {
-        $ref = $null
-        git -C $Worktree rev-parse --verify --quiet $base *> $null
-        if ($LASTEXITCODE -eq 0) {
-            $ref = $base
-        } else {
-            git -C $Worktree rev-parse --verify --quiet "origin/$base" *> $null
-            if ($LASTEXITCODE -eq 0) { $ref = "origin/$base" }
-        }
-        if (-not $ref) { continue }
+    $bestTime = 0
+    $branches = @(git -C $Worktree for-each-ref --format='%(refname:short)' refs/heads/ | Where-Object { $_ -ne $Branch })
+    foreach ($b in $branches) {
+        git -C $Worktree merge-base --is-ancestor $b $Branch 2>$null
+        if ($LASTEXITCODE -ne 0) { continue }
 
-        $mb = git -C $Worktree merge-base $ref $Branch 2>$null
+        $mb = git -C $Worktree merge-base $b $Branch 2>$null
         if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($mb)) { continue }
 
         $aheadStr = git -C $Worktree rev-list --count "$mb..$Branch" 2>$null
         if ($LASTEXITCODE -ne 0) { continue }
         $ahead = [int]$aheadStr
 
-        if ($bestAhead -lt 0 -or $ahead -lt $bestAhead) {
+        $timeStr = git -C $Worktree log -1 --format=%ct $mb 2>$null
+        $mbTime = 0
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrEmpty($timeStr)) { $mbTime = [int]$timeStr }
+
+        if ($bestAhead -lt 0 -or $ahead -lt $bestAhead -or ($ahead -eq $bestAhead -and $mbTime -gt $bestTime)) {
             $bestAhead = $ahead
-            $best = $base
+            $best = $b
+            $bestTime = $mbTime
         }
     }
     if ($best) { return $best } else { return '-' }
@@ -194,17 +201,34 @@ function Invoke-WtLs {
     $curTop = git -C (Get-Location).Path rev-parse --show-toplevel 2>$null
     if ($LASTEXITCODE -ne 0) { $curTop = "" }
 
-    # Build a PR lookup (branch -> "#N STATE"), single gh call. Optional.
-    $prMap = @{}
+    # commit -> branch map (short hashes) to flag duplicate branches (two
+    # branches pointing at the same HEAD, e.g. a checkpoint branch).
+    $commitMap = @{}
+    foreach ($line in @(git -C $repo for-each-ref --format='%(objectname:short) %(refname:short)' refs/heads/ 2>$null)) {
+        $parts = $line -split ' ', 2
+        if ($parts.Count -eq 2 -and $parts[0] -and $parts[1]) { $commitMap[$parts[0]] = $parts[1] }
+    }
+
+    # Build the PR lookup (branch -> "#N STATE→base") plus the PR's own diff
+    # (additions/deletions against ITS base). Single gh call. The base powers
+    # the "PR opens against the wrong base" warning: when it differs from the
+    # branch's parent (FROM), the PR is replaying the parent's commits.
+    # NOTE: `commits` is deliberately NOT requested from gh -- that field makes
+    # gh traverse the full commit/author connection and GraphQL blows up past
+    # the 500k-node cap on busy repos. The commit count is computed locally per
+    # row with rev-list instead (see below).
+    $prMap = @{}; $prBaseMap = @{}; $prDiffMap = @{}
     if (Get-Command gh -ErrorAction SilentlyContinue) {
         $slug = Get-WtOriginSlug -Repo $repo
         if ($slug) {
-            $prJson = gh pr list --repo $slug --state all --limit 200 --json number,state,headRefName 2>$null
+            $prJson = gh pr list --repo $slug --state all --limit 200 --json number,state,headRefName,baseRefName,additions,deletions 2>$null
             if ($LASTEXITCODE -eq 0 -and $prJson) {
                 try {
-                    $prs = $prJson | ConvertFrom-Json
-                    foreach ($pr in $prs) {
-                        if ($pr.headRefName) { $prMap[$pr.headRefName] = "#$($pr.number) $($pr.state)" }
+                    foreach ($pr in @($prJson | ConvertFrom-Json)) {
+                        if (-not $pr.headRefName) { continue }
+                        $prMap[$pr.headRefName] = "#$($pr.number) $($pr.state)→$($pr.baseRefName)"
+                        $prBaseMap[$pr.headRefName] = $pr.baseRefName
+                        $prDiffMap[$pr.headRefName] = "$($pr.additions)+/$($pr.deletions)-"
                     }
                 } catch { }
             }
@@ -214,7 +238,7 @@ function Invoke-WtLs {
     $worktrees = Get-WtWorktreeList -Repo $repo
 
     $rows = New-Object System.Collections.Generic.List[object]
-    $rows.Add([pscustomobject]@{ Mark=""; Branch="BRANCH"; From="FROM"; Head="HEAD"; State="STATE"; Sync="SYNC"; Pr="PR"; Path="PATH"; IsHeader=$true })
+    $rows.Add([pscustomobject]@{ Mark=""; Branch="BRANCH"; From="FROM"; Head="HEAD"; State="STATE"; Sync="SYNC"; Pr="PR"; PrDiff="PR DIFF"; Path="PATH"; IsHeader=$true })
 
     foreach ($w in $worktrees) {
         $branch = $w.Branch
@@ -230,14 +254,66 @@ function Invoke-WtLs {
 
         $sync = Get-WtSyncState -Worktree $path
         $pr = if ($prMap.ContainsKey($branch)) { $prMap[$branch] } else { 'none' }
+        $prDiff = '—'
+        $warn = $false
+
+        # A branch whose HEAD matches another branch is a duplicate checkpoint,
+        # not a line of work of its own -- nothing to review or merge separately.
+        $dup = ''
+        if ($branch -ne 'null' -and $head -ne '-' -and $commitMap.ContainsKey($head) -and $commitMap[$head] -ne $branch) {
+            $dup = "=$($commitMap[$head])"
+        }
+
+        if ($pr -ne 'none') {
+            # Commit count of the PR = commits in this branch not in its base
+            # (computed locally; gh's own field blows up GraphQL, see above).
+            $prDiff = if ($prDiffMap.ContainsKey($branch)) { $prDiffMap[$branch] } else { '—' }
+            $prBase = if ($prBaseMap.ContainsKey($branch)) { $prBaseMap[$branch] } else { '' }
+            $prc = '?'
+            if ($prBase) {
+                git -C $path rev-parse --verify --quiet "origin/$prBase" *> $null
+                $prBaseRef = if ($LASTEXITCODE -eq 0) { "origin/$prBase" } else {
+                    git -C $path rev-parse --verify --quiet $prBase *> $null
+                    if ($LASTEXITCODE -eq 0) { $prBase } else { '' }
+                }
+                if ($prBaseRef) {
+                    $prcStr = git -C $path rev-list --count "$prBaseRef..$branch" 2>$null
+                    if ($LASTEXITCODE -eq 0) { $prc = $prcStr }
+                }
+            }
+            $prDiff = "$prc/$prDiff"
+            if ($from -and $from -ne '-' -and $prBase -and $prBase -ne $from) {
+                # PR opens against a different base than the fork parent: GitHub
+                # is replaying the parent's commits on top of this branch's own.
+                # Show what the PR carries vs what is actually this branch's work.
+                $ownStr = git -C $path rev-list --count "$from..$branch" 2>$null
+                $own = if ($LASTEXITCODE -eq 0 -and $ownStr) { $ownStr } else { '?' }
+                $prDiff = "$prDiff (propios $own) ⚠"
+                $pr = "$pr ⚠"
+                $warn = $true
+            }
+        } elseif ($dup) {
+            $pr = "none $dup ⚠"
+            $warn = $true
+        } elseif ($from -and $from -ne '-') {
+            $ownStr = git -C $path rev-list --count "$from..$branch" 2>$null
+            $own = 0
+            if ($LASTEXITCODE -eq 0 -and $ownStr) { $own = [int]$ownStr }
+            if ($own -gt 0) {
+                $pr = 'no PR ⚠'
+                $prDiff = "$own commits sueltos"
+                $warn = $true
+            }
+        }
+
         $mark = if ($curTop -and $path -eq $curTop) { '*' } else { '' }
         $displayPath = Format-WtPath -Path $path
 
-        $rows.Add([pscustomobject]@{ Mark=$mark; Branch=$dispBranch; From=$from; Head=$head; State=$state; Sync=$sync; Pr=$pr; Path=$displayPath; IsHeader=$false })
+        $rows.Add([pscustomobject]@{ Mark=$mark; Branch=$dispBranch; From=$from; Head=$head; State=$state; Sync=$sync; Pr=$pr; PrDiff=$prDiff; Path=$displayPath; IsHeader=$false })
     }
 
     # Column widths, computed across header + data rows (mirrors the bash awk alignment pass).
-    $cols = @('Mark','Branch','From','Head','State','Sync','Pr','Path')
+    $cols = @('Mark','Branch','From','Head','State','Sync','Pr','PrDiff','Path')
     $widths = @{}
     foreach ($c in $cols) { $widths[$c] = ($rows | ForEach-Object { $_.$c.Length } | Measure-Object -Maximum).Maximum }
 
@@ -253,7 +329,8 @@ function Invoke-WtLs {
             if (-not $row.IsHeader) {
                 if ($c -eq 'State' -and $val -match 'dirty') { $attn = $true }
                 elseif ($c -eq 'Sync' -and $val -match '^(ahead|behind)') { $attn = $true }
-                elseif ($c -eq 'Pr' -and $val -match 'OPEN') { $attn = $true }
+                elseif ($c -eq 'Pr' -and $val -match 'OPEN|⚠') { $attn = $true }
+                elseif ($c -eq 'PrDiff' -and $val -match '⚠') { $attn = $true }
             }
             $color = $null
             if ($attn -and $bold) { $color = 'Red' }        # bold+red collapses to bright red in a console
@@ -273,7 +350,13 @@ function Invoke-WtLs {
     Write-Host "  STATE      clean = no local changes  |  dirty = uncommitted changes"
     Write-Host "  SYNC       vs its remote upstream: synced | ahead N | behind N | ahead N, behind M"
     Write-Host "             local-only = branch never pushed (no upstream to compare against)"
-    Write-Host "  PR         GitHub pull request state (none = no PR for this branch)"
+    Write-Host "  PR         GitHub PR state and the base it opens against (#50 OPEN->phase3);"
+    Write-Host "             'none =branch' = duplicate branch (same commit as another);"
+    Write-Host "             'no PR' = work exists but no PR has been opened"
+    Write-Host "  PR DIFF    the PR's own diff vs its base (commits/additions/deletions);"
+    Write-Host "             '(propios N)' = commits that are actually this branch's own work"
+    Write-Host "  ⚠          PR opens against a different base than the branch's parent, a duplicate"
+    Write-Host "             branch, or a branch with unmerged work and no PR"
 }
 
 # Interactive picker: list local branches, mark the current one, return the choice.
@@ -299,6 +382,34 @@ function Select-WtBranch {
     $idx = [int]$sel
     if ($idx -lt 1 -or $idx -gt $branches.Count) { return $null }
     return $branches[$idx - 1]
+}
+
+# Walk the wt-parent chain upward from a branch, printing "main -> a -> b -> c".
+# Pure bookkeeping read; guards against cycles with a seen-set and a depth cap.
+function Get-WtChain {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repo,
+        [Parameter(Mandatory = $true)][string]$Branch
+    )
+    $acc = @()
+    $seen = @{}
+    $current = $Branch
+    $n = 0
+    while ($current) {
+        if ($seen.ContainsKey($current)) { break }
+        $seen[$current] = $true
+        if ($current -in @('develop', 'main', 'master')) {
+            $acc = @($current) + $acc
+            break
+        }
+        $acc = @($current) + $acc
+        $parent = git -C $Repo config "branch.$current.wt-parent" 2>$null
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($parent)) { break }
+        $current = $parent
+        $n++
+        if ($n -gt 10) { break }
+    }
+    return ($acc -join ' -> ')
 }
 
 function Invoke-WtNew {
@@ -372,6 +483,26 @@ function Invoke-WtNew {
     }
 
     Write-Host "Created worktree '$name' from '$from'  ->  $(Format-WtPath $path)"
+
+    # Stack context: when the base is another feature branch, show the chain and
+    # warn that the PR for this branch will be stacked on the base's PR (it must
+    # merge bottom-up) rather than opened against main -- the decision that used
+    # to be taken silently.
+    if ($from -notin @('develop', 'main', 'master')) {
+        $integ = $null
+        foreach ($base in @('main', 'origin/main')) {
+            git -C $repo rev-parse --verify --quiet $base *> $null
+            if ($LASTEXITCODE -eq 0) { $integ = $base; break }
+        }
+        if ($integ) {
+            git -C $repo merge-base --is-ancestor $from $integ 2>$null
+            if ($LASTEXITCODE -ne 0) {
+                [Console]::Error.WriteLine("note: base '$from' is NOT merged into $integ -- the PR for '$name' will be stacked on '$from''s PR and must merge after it (bottom-up).")
+            }
+        }
+        $chain = Get-WtChain -Repo $repo -Branch $name
+        if ($chain) { Write-Host "Stack: $chain" }
+    }
 }
 
 function Invoke-WtOpen {
