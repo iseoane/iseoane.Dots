@@ -87,3 +87,7 @@ source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 # if [[ $- == *i* ]] && [[ -z "$HERDR_ENV" ]] && [[ -z "$NO_HERDR" ]] && command -v herdr >/dev/null 2>&1; then
 #     exec herdr
 # fi
+
+# Disable no-mistakes telemetry (umami) for CLI processes
+export NO_MISTAKES_TELEMETRY=0
+export PATH="/usr/local/go/bin:$HOME/go/bin:$PATH"
