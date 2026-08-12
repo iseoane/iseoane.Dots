@@ -20,7 +20,10 @@ setopt PUSHD_IGNORE_DUPS
 fpath=(~/.zsh/zsh-completions/src $fpath)
 
 autoload -Uz compinit
-compinit
+# Docker Desktop's WSL integration mounts /usr/share/zsh/vendor-completions/_docker
+# as a symlink only while it's running; filter the resulting dangling-symlink
+# warning instead of the whole compinit output, so real errors still surface.
+compinit 2> >(grep -v 'vendor-completions/_docker')
 
 zstyle ':completion:*' menu select                       # arrow-key selectable menu
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' # case-insensitive matching

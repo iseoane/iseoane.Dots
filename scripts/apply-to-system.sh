@@ -19,7 +19,13 @@ echo "== zsh (symlink) =="
 symlink "$REPO_ROOT/zsh/.zshrc" "$HOME/.zshrc"
 symlink "$REPO_ROOT/zsh/.zprofile" "$HOME/.zprofile"
 
-echo "== starship (copy) =="
+echo "== starship (install binary + copy config) =="
+# .zshrc unconditionally does `eval "$(starship init zsh)"`, so the binary
+# must exist before the config does. Unlike Windows (winget, manual -- see
+# README prerequisites), the official installer works unattended here.
+if ! command -v starship >/dev/null 2>&1; then
+  curl -sS https://starship.rs/install.sh | sh -s -- -y
+fi
 # Shared prompt config for zsh and PowerShell 7. scan_timeout raised above the
 # 30ms default so AV/encryption file-read latency doesn't trip scan warnings.
 backup_if_needed "$HOME/.config/starship.toml"
@@ -70,12 +76,27 @@ copy "$REPO_ROOT/nvim" "$HOME/.config/nvim"
 
 echo "== engram sync hook (copy, debian/wsl side) =="
 # ~/.engram-sync is its own git repo (private engram-data remote) that the
-# SessionStart/Stop hooks in claude/settings.json invoke to push/pull Engram
-# memory chunks between machines. Only the hook script is versioned here;
-# the clone's .git/ and .engram/ data are machine state, never touched by copy.
+# SessionStart/Stop hooks in claude/settings.json AND the SessionStart/SessionEnd
+# hooks in codex/hooks.json invoke to push/pull Engram memory chunks between
+# machines. Only the hook script is versioned here; the clone's .git/ and
+# .engram/ data are machine state, never touched by copy.
 mkdir -p "$HOME/.engram-sync"
 copy "$REPO_ROOT/engram/sync.sh" "$HOME/.engram-sync/sync.sh"
 chmod +x "$HOME/.engram-sync/sync.sh"
+
+echo "== codex (merge, debian/wsl side) =="
+# codex/hooks.json is only OUR fragment (SessionStart pull + Stop push), never
+# a full snapshot: on this machine the CLI is Orca-wrapped and CODEX_HOME
+# points at an Orca-managed runtime dir (~/.local/share/orca/codex-runtime-home/home)
+# whose hooks.json already carries Orca's own per-event codex-hook.sh
+# dispatcher — a blind copy would destroy that. merge-hooks.py adds our
+# entries only if their exact command isn't already present, so this is safe
+# to re-run and safe on a plain (non-Orca) machine where CODEX_HOME defaults
+# to ~/.codex and the file may not exist yet.
+CODEX_HOOKS_TARGET="${CODEX_HOME:-$HOME/.codex}/hooks.json"
+mkdir -p "$(dirname "$CODEX_HOOKS_TARGET")"
+backup_if_needed "$CODEX_HOOKS_TARGET"
+python3 "$REPO_ROOT/codex/merge-hooks.py" "$REPO_ROOT/codex/hooks.json" "$CODEX_HOOKS_TARGET"
 
 if has_windows_mount; then
   echo "== wezterm (copy, windows side via /mnt/c) =="

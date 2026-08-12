@@ -1,8 +1,273 @@
 {
+  "editorMode": "normal",
+  "effortLevel": "high",
+  "enableWorkflows": false,
+  "enabledPlugins": {
+    "3gpp-capabilities-design-expert@local-marketplace": true,
+    "claude-md-management@claude-plugins-official": true,
+    "django-celery-expert@local-marketplace": true,
+    "django-expert@local-marketplace": true,
+    "django-patterns@local-marketplace": true,
+    "engram@engram": true,
+    "feature-dev@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "mongodb@local-marketplace": true,
+    "pytest-coverage@local-marketplace": true,
+    "skill-creator@claude-plugins-official": true,
+    "tshark-implementation-expert@local-marketplace": true,
+    "webapp-testing@local-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "engram": {
+      "source": {
+        "repo": "Gentleman-Programming/engram",
+        "source": "github"
+      }
+    },
+    "local-marketplace": {
+      "source": {
+        "path": "/home/iseoane/UE.Capability.Analizer/.claude/marketplace",
+        "source": "directory"
+      }
+    }
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "command": "zellij pipe --name \"zellij-attention::waiting::$ZELLIJ_PANE_ID\" 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "node \"/home/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
+            "statusMessage": "Checking GitNexus index freshness...",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "node \"/home/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
+            "statusMessage": "Enriching with GitNexus graph context...",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Grep|Glob|Bash"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "async": true,
+            "command": "/home/iseoane/.engram-sync/sync.sh push",
+            "timeout": 120,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "/home/iseoane/.engram-sync/sync.sh pull",
+            "timeout": 120,
+            "type": "command"
+          }
+        ],
+        "matcher": "startup|resume"
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash '/home/iseoane/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "/home/iseoane/.engram-sync/sync.sh push",
+            "timeout": 60,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "zellij pipe --name \"zellij-attention::completed::$ZELLIJ_PANE_ID\" 2>/dev/null || true",
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "codegraph prompt-hook",
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "gentle-ai skill-registry refresh --quiet --no-gitignore --cwd \"${CLAUDE_PROJECT_DIR:-$PWD}\" || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -r '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ] && [ -x '/home/iseoane/.orca/agent-hooks/claude-hook.sh' ]; then /bin/sh '/home/iseoane/.orca/agent-hooks/claude-hook.sh'; else cat >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "inputNeededNotifEnabled": true,
+  "language": "Español",
+  "mcpServers": {
+    "context7": {
+      "args": [
+        "-y",
+        "--package=@upstash/context7-mcp@2.2.5",
+        "--",
+        "context7-mcp"
+      ],
+      "command": "npx"
+    }
+  },
+  "model": "opus[1m]",
+  "outputStyle": "Neutral",
   "permissions": {
     "allow": [
       "mcp__codegraph__*"
     ],
+    "defaultMode": "default",
     "deny": [
       "Bash(rm -rf /)",
       "Bash(sudo rm -rf /)",
@@ -28,180 +293,23 @@
       "Edit(**/*.key)",
       "Read(**/secrets/*)",
       "Edit(**/secrets/*)"
-    ],
-    "defaultMode": "bypassPermissions"
-  },
-  "model": "sonnet",
-  "hooks": {
-    "Notification": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "zellij pipe --name \"zellij-attention::waiting::$ZELLIJ_PANE_ID\" 2>/dev/null || true"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"/home/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
-            "timeout": 10,
-            "statusMessage": "Checking GitNexus index freshness..."
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Grep|Glob|Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"/home/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
-            "timeout": 10,
-            "statusMessage": "Enriching with GitNexus graph context..."
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/iseoane/.engram-sync/sync.sh push",
-            "timeout": 120
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "startup|resume",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/iseoane/.engram-sync/sync.sh pull",
-            "timeout": 120
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '/home/iseoane/.claude/hooks/herdr-agent-state.sh' session",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/iseoane/.engram-sync/sync.sh push",
-            "timeout": 60
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "zellij pipe --name \"zellij-attention::completed::$ZELLIJ_PANE_ID\" 2>/dev/null || true"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "codegraph prompt-hook"
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "gentle-ai skill-registry refresh --quiet --no-gitignore --cwd \"${CLAUDE_PROJECT_DIR:-$PWD}\" || true"
-          }
-        ]
-      }
     ]
   },
-  "worktree": {
-    "baseRef": "head"
-  },
-  "enableWorkflows": false,
+  "remoteControlAtStartup": true,
+  "skipAutoPermissionPrompt": true,
+  "skipDangerousModePermissionPrompt": true,
   "statusLine": {
-    "type": "command",
     "command": "~/.claude/statusline.sh",
     "padding": 0,
-    "refreshInterval": 30
+    "refreshInterval": 30,
+    "type": "command"
   },
   "subagentStatusLine": {
-    "type": "command",
-    "command": "~/.claude/subagent-statusline.sh"
+    "command": "~/.claude/subagent-statusline.sh",
+    "type": "command"
   },
-  "enabledPlugins": {
-    "3gpp-capabilities-design-expert@local-marketplace": true,
-    "claude-md-management@claude-plugins-official": true,
-    "django-celery-expert@local-marketplace": true,
-    "django-expert@local-marketplace": true,
-    "django-patterns@local-marketplace": true,
-    "engram@engram": true,
-    "feature-dev@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
-    "mongodb@local-marketplace": true,
-    "pytest-coverage@local-marketplace": true,
-    "skill-creator@claude-plugins-official": true,
-    "tshark-implementation-expert@local-marketplace": true,
-    "webapp-testing@local-marketplace": true
-  },
-  "extraKnownMarketplaces": {
-    "engram": {
-      "source": {
-        "source": "github",
-        "repo": "Gentleman-Programming/engram"
-      }
-    },
-    "local-marketplace": {
-      "source": {
-        "source": "directory",
-        "path": "/home/iseoane/UE.Capability.Analizer/.claude/marketplace"
-      }
-    }
-  },
-  "outputStyle": "Neutral",
-  "language": "Español",
-  "effortLevel": "medium",
   "tui": "fullscreen",
-  "skipDangerousModePermissionPrompt": true,
-  "remoteControlAtStartup": true,
-  "inputNeededNotifEnabled": false,
-  "skipAutoPermissionPrompt": true,
-  "mcpServers": {
-    "context7": {
-      "args": [
-        "-y",
-        "--package=@upstash/context7-mcp@2.2.5",
-        "--",
-        "context7-mcp"
-      ],
-      "command": "npx"
-    }
+  "worktree": {
+    "baseRef": "head"
   }
 }

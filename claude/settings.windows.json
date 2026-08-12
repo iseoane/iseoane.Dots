@@ -1,7 +1,7 @@
 {
   "autoUpdatesChannel": "latest",
   "editorMode": "normal",
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "enabledPlugins": {
     "context7@claude-plugins-official": true,
     "engram@engram": true,
@@ -22,30 +22,74 @@
     }
   },
   "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
     "PostToolUse": [
       {
         "hooks": [
           {
-            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"C:/Users/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
+            "command": "command -v node \u003e/dev/null 2\u003e\u00261 || exit 0; node \"C:/Users/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
             "statusMessage": "Checking GitNexus index freshness...",
             "timeout": 10,
             "type": "command"
           }
         ],
         "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
       }
     ],
     "PreToolUse": [
       {
         "hooks": [
           {
-            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"C:/Users/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
+            "command": "command -v node \u003e/dev/null 2\u003e\u00261 || exit 0; node \"C:/Users/iseoane/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
             "statusMessage": "Enriching with GitNexus graph context...",
             "timeout": 10,
             "type": "command"
           }
         ],
         "matcher": "Grep|Glob|Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
       }
     ],
     "SessionEnd": [
@@ -69,6 +113,16 @@
           }
         ],
         "matcher": "startup|resume"
+      },
+      {
+        "hooks": [
+          {
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\iseoane\\.claude\\hooks\\herdr-agent-state.ps1\" session",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
       }
     ],
     "Stop": [
@@ -77,6 +131,59 @@
           {
             "command": "pwsh -NoProfile -File C:/Users/iseoane/.engram-sync/sync.ps1 push",
             "timeout": 60,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
             "type": "command"
           }
         ]
@@ -99,6 +206,15 @@
             "type": "command"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
       }
     ]
   },
@@ -115,7 +231,7 @@
       "command": "npx"
     }
   },
-  "model": "claude-fable-5[1m]",
+  "model": "sonnet",
   "outputStyle": "Neutral",
   "permissions": {
     "allow": [

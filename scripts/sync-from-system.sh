@@ -53,6 +53,14 @@ else
   echo "  skip: ~/.engram-sync/sync.sh not found"
 fi
 
+echo "== codex (debian/wsl side) =="
+# No reverse-sync here on purpose: codex/hooks.json is only OUR fragment
+# (SessionStart pull + Stop push). The live file at ${CODEX_HOME:-~/.codex}/hooks.json
+# also carries entries apply-to-system.sh merged in from elsewhere (e.g. Orca's
+# own codex-hook.sh dispatcher on this machine) that must never land in the repo.
+# Edit codex/hooks.json directly, then re-run apply-to-system.sh to redeploy.
+echo "  skip: codex/hooks.json is edited directly, not synced back from the live file"
+
 if has_windows_mount; then
   echo "== wezterm (windows side via /mnt/c) =="
   cp "$WIN_HOME/.wezterm.lua" "$REPO_ROOT/wezterm/.wezterm.lua"

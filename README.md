@@ -78,6 +78,10 @@ nvim/                      -> copied to ~/.config/nvim (Debian/WSL) AND
 engram/sync.sh             -> copied to ~/.engram-sync/sync.sh (Debian/WSL)
 engram/sync.ps1            -> copied to Windows .engram-sync/sync.ps1
                               (via /mnt/c)
+codex/hooks.json           -> merged (via codex/merge-hooks.py) into
+                              ${CODEX_HOME:-~/.codex}/hooks.json (Debian/WSL
+                              only; Codex isn't provisioned on the Windows
+                              side yet)
 ```
 
 `claude/settings.local.json` is intentionally NOT versioned — it holds
@@ -126,6 +130,13 @@ Claude Code skill, so `herdr` config work in this repo gets first-class help;
 it only activates inside a herdr pane (`HERDR_ENV=1`).
 
 ### starship: shared prompt, raised scan_timeout
+
+On Debian/WSL, `apply-to-system.sh` installs the `starship` binary itself
+(official installer, unattended) if it's not already on PATH -- `.zshrc`
+unconditionally does `eval "$(starship init zsh)"`, so a fresh machine would
+otherwise hit `command not found: starship` on every shell start. Windows
+has no unattended path (winget needs an interactive prompt), so it stays a
+manual prerequisite (see table above).
 
 `starship/starship.toml` is copied to `~/.config/starship.toml` on both OSes.
 Beyond matching the prompt, it raises `scan_timeout` to 120 ms (default 30)
@@ -217,9 +228,41 @@ private `engram-data` repo** (not this one) — it holds the append-only
 Engram memory chunks (`.engram/chunks/`, `.engram/manifest.json`) that get
 pushed/pulled between machines. Only the two hook scripts that drive that
 clone are versioned here, as `engram/sync.sh` (Debian/WSL, invoked by
-`claude/settings.json`'s SessionStart/Stop hooks) and `engram/sync.ps1`
+`claude/settings.json`'s SessionStart/Stop hooks **and** `codex/hooks.json`'s
+SessionStart/Stop hooks — both call the same script) and `engram/sync.ps1`
 (Windows, invoked by `claude/settings.windows.json`). `apply-to-system.sh`
 copies each script into the existing `~/.engram-sync` clone without touching
 its `.git/` or `.engram/` data; `sync-from-system.sh` pulls them back the
 same way, skipping the copy on a machine where `~/.engram-sync` hasn't been
 cloned yet.
+
+`codex/hooks.json` is handled differently: it's **merged**, not copied, via
+`codex/merge-hooks.py`, into `${CODEX_HOME:-~/.codex}/hooks.json` — adding
+our SessionStart/Stop entries only if their exact command isn't already
+there. A blind copy would be destructive on this machine: Codex CLI here is
+wrapped by Orca, which sets `CODEX_HOME` to an Orca-managed runtime directory
+(`~/.local/share/orca/codex-runtime-home/home`, **not** `~/.codex`) whose
+`hooks.json` already carries Orca's own per-event `codex-hook.sh` dispatcher
+for every event — overwriting it would silently break that. `~/.codex/hooks.json`
+itself is left with our entries too, as the fallback for a plain
+(non-Orca-wrapped) Codex install where `CODEX_HOME` isn't overridden.
+
+Two things learned the hard way while wiring this up, verified with `codex
+doctor`, live binary inspection, and repeated `codex exec` test runs (never
+against the real hooks — always against a disposable throwaway script first):
+
+- Codex's `SessionEnd` event only fires in the interactive TUI (confirmed:
+  never fired under `codex exec` even after fixing the CODEX_HOME
+  discovery), and is hard-clamped to a 1s default / 3s max regardless of the
+  `timeout` you set — and `async: true` is a documented no-op ("parsed, but
+  asynchronous command hooks aren't supported yet"), so it can't be used to
+  background a slow push. The push hook is wired to `Stop` instead — it
+  fires after every turn in **both** interactive and `codex exec` mode, with
+  the same 600s default timeout as other events, so a normal blocking
+  `sync.sh push` fits comfortably with no backgrounding trick needed.
+- Never test a hook that runs `git` by wrapping it in a hard `timeout N`
+  wrapper: a kill mid-rebase leaves `.git/rebase-merge` in a state
+  `git rebase --abort` can't always clean up, which then looks like a
+  recurring content conflict on every later sync attempt. Test hooks against
+  a disposable script first; only point them at the real command once the
+  wiring itself is confirmed.
