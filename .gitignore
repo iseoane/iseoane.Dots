@@ -1,4 +1,5 @@
 .atl/
+.codegraph/
 *.bak-*
 
 # Never version SSH private keys or host fingerprints, even accidentally.
