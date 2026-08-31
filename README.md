@@ -159,7 +159,11 @@ schemes as a fragment, which is the supported way to add colours without
 touching `settings.json` -- that file holds machine-specific profile GUIDs and
 paths and is rewritten by Terminal's own settings UI, so versioning it whole
 would be fragile. Which scheme is *active* therefore stays a `settings.json` /
-UI choice and is not reapplied by `apply-to-system.sh`. Note also that a scheme
+UI choice and is not reapplied by `apply-to-system.sh` -- and so does
+transparency, since `opacity` and `useAcrylic` live on `profiles.defaults` and
+a fragment cannot set those. Both are currently `opacity: 85` + `useAcrylic`,
+matching wezterm's `window_background_opacity = 0.85`; keep the two in step if
+you retune either. Note also that a scheme
 of the same name inside `settings.json` shadows the fragment's; the inline
 `Gentleman` entry there is byte-identical, so it makes no difference.
 
