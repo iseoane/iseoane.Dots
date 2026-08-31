@@ -11,8 +11,28 @@
 # Guarded: an unresolved &starship throws a terminating error, which would
 # abort the rest of this profile (modules, shims, herdr wrappers). Fall back
 # to the default prompt instead.
+# `starship init powershell` costs ~700ms on every shell start. Cache the
+# generated script and dot-source it instead; measured 737ms -> 227ms.
+#
+# Note it must be `--print-full-init`. Plain `starship init powershell` returns
+# only a 198-byte BOOTSTRAP that re-invokes starship with --print-full-init at
+# runtime, so caching that still spawns the process on every start and saves
+# almost nothing. --print-full-init returns the real ~10.8KB init script.
+#
+# The cache keys off the starship BINARY's timestamp, not starship.toml: the
+# generated script only wires up a prompt function that shells out to
+# `starship prompt` each time, so it embeds no config. Editing starship.toml
+# therefore takes effect immediately with no regeneration needed -- only
+# upgrading starship itself invalidates this.
 if (Get-Command starship -ErrorAction SilentlyContinue) {
-    Invoke-Expression (&starship init powershell)
+    $starshipCache = Join-Path $env:LOCALAPPDATA 'starship\init.ps1'
+    $starshipExe = (Get-Command starship).Source
+    if (-not (Test-Path $starshipCache) -or
+        (Get-Item $starshipExe).LastWriteTime -gt (Get-Item $starshipCache).LastWriteTime) {
+        New-Item -ItemType Directory -Force -Path (Split-Path $starshipCache) | Out-Null
+        (&starship init powershell --print-full-init) | Set-Content -LiteralPath $starshipCache -Encoding utf8
+    }
+    . $starshipCache
 } else {
     Write-Warning "starship not found on PATH; using the default prompt"
 }
@@ -31,8 +51,11 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
 # -----------------------------------------------------------------
 # 2. Modules (icons, predictions, docker completion)
 # -----------------------------------------------------------------
-# Colored icons for ls / dir
-Import-Module Terminal-Icons
+# Colored icons for ls / dir. NOT imported here: it was the single most
+# expensive thing in this profile (~950ms of a ~3.2s start). It only decorates
+# directory listings, so the `ls` function below imports it on first use.
+# Trade-off: calling `dir`/`Get-ChildItem` directly before the first `ls` gives
+# an undecorated listing, and that first `ls` pays the load.
 
 # PSReadLine mirrors the zsh setup: inline gray suggestions from history
 # (zsh-autosuggestions), Ctrl+Space to accept, prefix history search on
@@ -108,6 +131,10 @@ function ls {
     }
     # Splat via hashtable: splatting the array positionally would bind a second
     # path to Get-ChildItem's -Filter (position 1) and silently list wrong output.
+    # Load the icon formatter on first use (see the note where the eager
+    # Import-Module used to be). Importing before the objects reach the
+    # formatter is enough for them to be decorated.
+    if (-not (Get-Module Terminal-Icons)) { Import-Module Terminal-Icons }
     $gci = @{ Force = $all }
     if ($paths.Count) { $gci.Path = $paths }
     $items = Get-ChildItem @gci

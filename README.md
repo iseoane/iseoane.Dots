@@ -250,6 +250,30 @@ filesystem served by GoogleDriveFS (a user-mode driver, slower than kernel
 NTFS), so per-file reads there blew past the 30 ms default and made Starship
 log `Scanning current directory timed out`. The higher value absorbs it.
 
+### PowerShell: profile start-up cost
+
+The PS7 profile was reporting `Loading personal and system profiles took
+3210ms`. Measured per block, three imports accounted for most of it:
+Terminal-Icons ~950ms, `starship init` ~700ms, DockerCompletion ~430ms. Two are
+now dealt with, taking the profile itself from ~2810ms to ~1675ms:
+
+- **starship** init is cached to `%LOCALAPPDATA%\starship\init.ps1` and
+  dot-sourced, regenerated only when the starship binary is newer than the
+  cache. It must be cached with `--print-full-init`: plain `starship init
+  powershell` returns a 198-byte bootstrap that re-invokes starship at runtime,
+  so caching *that* still spawns the process every start. The cache keys off
+  the binary, not `starship.toml`, because the init script embeds no config --
+  editing the toml takes effect with no regeneration.
+- **Terminal-Icons** is no longer imported eagerly. It only decorates directory
+  listings, so the profile's own `ls` function imports it on first call. The
+  trade-off: `dir`/`Get-ChildItem` called directly before the first `ls` comes
+  out undecorated, and that first `ls` pays the ~950ms.
+
+**DockerCompletion (~430ms) is left as-is on purpose.** It exists to register a
+`docker` tab-completer, and a completer has to be registered *before* Tab is
+pressed -- there is no hook for "about to complete", so lazy-loading it would
+simply remove the feature. It is pay-every-start or drop it.
+
 ### PowerShell: two profiles, one worktree script
 
 Windows runs two PowerShell generations, each with its own profile directory:
