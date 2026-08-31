@@ -254,8 +254,8 @@ log `Scanning current directory timed out`. The higher value absorbs it.
 
 The PS7 profile was reporting `Loading personal and system profiles took
 3210ms`. Measured per block, three imports accounted for most of it:
-Terminal-Icons ~950ms, `starship init` ~700ms, DockerCompletion ~430ms. Two are
-now dealt with, taking the profile itself from ~2810ms to ~1675ms:
+Terminal-Icons ~950ms, `starship init` ~700ms, DockerCompletion ~430ms. All three
+are now dealt with, taking the profile itself from ~2810ms to ~1340ms:
 
 - **starship** init is cached to `%LOCALAPPDATA%\starship\init.ps1` and
   dot-sourced, regenerated only when the starship binary is newer than the
@@ -269,10 +269,19 @@ now dealt with, taking the profile itself from ~2810ms to ~1675ms:
   trade-off: `dir`/`Get-ChildItem` called directly before the first `ls` comes
   out undecorated, and that first `ls` pays the ~950ms.
 
-**DockerCompletion (~430ms) is left as-is on purpose.** It exists to register a
-`docker` tab-completer, and a completer has to be registered *before* Tab is
-pressed -- there is no hook for "about to complete", so lazy-loading it would
-simply remove the feature. It is pay-every-start or drop it.
+- **DockerCompletion** is gone. docker is driven from WSL/zsh on this machine,
+  so nothing in PowerShell was using the ~430ms it cost. Deferring it was not an
+  option: a completer must be registered before Tab is pressed, and both
+  workarounds were measured and rejected -- `Register-EngineEvent
+  PowerShell.OnIdle -Action` runs in a separate runspace, so the module never
+  reaches the interactive session, and pre-warming it in a `Start-ThreadJob`
+  only absorbs the disk cost (the in-session import still took 427ms, since the
+  parse and registration are synchronous in the main runspace). Add the import
+  back if you ever drive docker from PowerShell.
+
+Net: ~2810ms -> ~1340ms. What remains is mostly irreducible without dropping
+features -- parsing the profile, the cached starship init (~227ms), the
+PSReadLine options, `gh auth token` (~175ms) and the two dot-sourced scripts.
 
 ### PowerShell: two profiles, one worktree script
 

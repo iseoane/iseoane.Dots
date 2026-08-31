@@ -105,8 +105,20 @@ Set-PSReadLineOption -Colors @{
     Emphasis         = '#E0C15A'  # the gold accent
 }
 
-# Smart completion for docker commands and containers
-Import-Module DockerCompletion
+# DockerCompletion (docker tab-completion) is deliberately NOT imported: it cost
+# ~430ms of a ~2.8s profile start and docker is driven from WSL/zsh on this
+# machine, not from PowerShell, so nothing here was using it.
+#
+# There is no cheaper way to keep it. Deferring is not possible: an argument
+# completer has to be registered before Tab is pressed, and the two tricks that
+# look like they would work do not.
+#   - Register-EngineEvent PowerShell.OnIdle -Action runs its scriptblock in a
+#     SEPARATE runspace, so the module loads there and never reaches this
+#     session (verified: handler ran, Get-Module in-session still False).
+#   - Pre-warming it in a Start-ThreadJob only absorbs the disk cost; importing
+#     into the session afterwards still took 427ms, because the parse and
+#     registration must happen synchronously in the main runspace.
+# If you start using docker from PowerShell, just add the import back.
 
 # -----------------------------------------------------------------
 # 3. Unix muscle-memory shims
