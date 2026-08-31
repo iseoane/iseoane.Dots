@@ -111,11 +111,12 @@ config.font = wezterm.font("Hack Nerd Font")
 config.font_size = 15.0
 -- Transparency: the Gentleman palette is a *blur* theme (its variant.lua
 -- declares bg_dark = "none" and gentle-ai injects background: "none"), so it
--- is designed to sit on a see-through ground. 0.95 was effectively invisible;
--- 0.85 reads as translucent while keeping text contrast against #06080f.
--- Kept in step with Windows Terminal's profiles.defaults.opacity (85).
--- Lower toward 0.75 for more, raise toward 0.95 for none.
-config.window_background_opacity = 0.85
+-- is designed to sit on a see-through ground. Tuned by eye: 0.95 was
+-- invisible, 0.85 subtle, 0.75 still read as too solid. 0.65 is clearly
+-- see-through; text keeps its contrast against #06080f, but how readable it
+-- actually is now depends on what's behind the window.
+-- Kept in step with Windows Terminal's profiles.defaults.opacity (65).
+config.window_background_opacity = 0.65
 config.macos_window_background_blur = 50
 -- Windows counterpart to macos_window_background_blur: without a system
 -- backdrop the opacity above reads as a plain see-through window rather

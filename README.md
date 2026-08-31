@@ -154,6 +154,19 @@ Two details worth knowing before editing these:
   rewrites at all. Verified on starship 1.26.0; if a future version drops that
   shadowing, every module needs an explicit `style =` instead.
 
+**Shell syntax highlighting is themed by role, from fish.** PSReadLine and
+zsh-syntax-highlighting both ship defaults that ignore the palette -- most
+visibly PSReadLine's `Command`, which is plain `Yellow`, so every typed command
+came out in `#FFE066`. In this palette yellow belongs to **strings**; commands
+are cyan. Both shells now carry the role assignment from Gentleman.Dots'
+`GentlemanFish/fish/config.fish`, in `powershell/Microsoft.PowerShell_profile.ps1`
+(`Set-PSReadLineOption -Colors`) and `zsh/.zshrc` (`ZSH_HIGHLIGHT_STYLES`, set
+after the plugin is sourced so it wins). Two roles fish has no equivalent for
+depart from `variant.lua` on purpose, both to avoid colliding with a role
+already in use: `Variable` (its `#C4746E` sits only dE 17 from the error
+colour) and `Type` (its `#8FB8DD` is dE 7 from `Parameter`, i.e.
+indistinguishable). This changes no palette value -- only which role uses which.
+
 **Windows Terminal is deliberately only half-managed.** The repo ships the
 schemes as a fragment, which is the supported way to add colours without
 touching `settings.json` -- that file holds machine-specific profile GUIDs and

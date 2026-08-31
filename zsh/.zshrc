@@ -77,6 +77,44 @@ alias rmwt='~/.config/herdr/scripts/herdr-wt rm'
 # Must be sourced LAST, after all other zle widgets are defined
 source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
+# Gentleman syntax colours. Set AFTER the source above, so they win over the
+# plugin's defaults. Same role assignment as the PowerShell profile's
+# Set-PSReadLineOption block -- both are ported from Gentleman.Dots' own fish
+# config (GentlemanFish/fish/config.fish), the only place upstream maps the
+# palette by role rather than by ANSI slot. In this palette yellow is for
+# *strings*, not commands; commands are cyan.
+#
+# Deliberately NOT the colorscheme's extras/zsh-syntax-highlighting file: like
+# its alacritty, kitty and windows-terminal extras, that one was inherited
+# unchanged from oldworld.nvim and carries a different palette (#90b99f etc).
+typeset -gA ZSH_HIGHLIGHT_STYLES
+ZSH_HIGHLIGHT_STYLES[command]='fg=#7AA89F'
+ZSH_HIGHLIGHT_STYLES[builtin]='fg=#7AA89F'
+ZSH_HIGHLIGHT_STYLES[function]='fg=#7AA89F'
+ZSH_HIGHLIGHT_STYLES[alias]='fg=#7AA89F'
+ZSH_HIGHLIGHT_STYLES[suffix-alias]='fg=#7AA89F'
+ZSH_HIGHLIGHT_STYLES[hashed-command]='fg=#7AA89F'
+ZSH_HIGHLIGHT_STYLES[precommand]='fg=#7AA89F,italic'
+ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=#CB7C94'
+ZSH_HIGHLIGHT_STYLES[reserved-word]='fg=#FF8DD7'
+ZSH_HIGHLIGHT_STYLES[single-quoted-argument]='fg=#FFE066'
+ZSH_HIGHLIGHT_STYLES[double-quoted-argument]='fg=#FFE066'
+ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]='fg=#FFE066'
+ZSH_HIGHLIGHT_STYLES[rc-quote]='fg=#FFE066'
+ZSH_HIGHLIGHT_STYLES[single-hyphen-option]='fg=#A3B5D6'
+ZSH_HIGHLIGHT_STYLES[double-hyphen-option]='fg=#A3B5D6'
+ZSH_HIGHLIGHT_STYLES[path]='fg=#F3F6F9'
+ZSH_HIGHLIGHT_STYLES[globbing]='fg=#B7CC85'
+ZSH_HIGHLIGHT_STYLES[commandseparator]='fg=#B7CC85'
+ZSH_HIGHLIGHT_STYLES[redirection]='fg=#F3F6F9'
+ZSH_HIGHLIGHT_STYLES[comment]='fg=#8394A3'
+ZSH_HIGHLIGHT_STYLES[dollar-double-quoted-argument]='fg=#B99BF2'
+ZSH_HIGHLIGHT_STYLES[back-double-quoted-argument]='fg=#FF8DD7'
+ZSH_HIGHLIGHT_STYLES[assign]='fg=#B99BF2'
+ZSH_HIGHLIGHT_STYLES[named-fd]='fg=#A4DAA7'
+ZSH_HIGHLIGHT_STYLES[numeric-fd]='fg=#A4DAA7'
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#8394A3'
+
 # ── Auto-launch herdr on interactive shells (migrated from .bashrc) ─
 # Guards:
 #   $- == *i*      -> only interactive shells (not scripts)
@@ -91,3 +129,7 @@ source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 # Disable no-mistakes telemetry (umami) for CLI processes
 export NO_MISTAKES_TELEMETRY=0
 export PATH="/usr/local/go/bin:$HOME/go/bin:$PATH"
+
+# >>> Codex installer >>>
+export PATH="/home/iseoane/.local/bin:$PATH"
+# <<< Codex installer <<<
