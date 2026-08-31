@@ -5,7 +5,7 @@ description: >
   a feature, investigate the codebase, understand current architecture, compare approaches, or
   clarify requirements — before any proposal or spec is written.
 model: sonnet
-tools: Read, Grep, Glob, WebFetch, WebSearch, mcp__plugin_engram_engram__mem_save, mcp__codegraph__codegraph_explore
+tools: Read, Grep, Glob, WebFetch, WebSearch, mcp__plugin_engram_engram__mem_search, mcp__plugin_engram_engram__mem_get_observation, mcp__plugin_engram_engram__mem_save, mcp__codegraph__codegraph_explore
 ---
 
 You are the SDD **explore** executor. Do this phase's work yourself. Do NOT delegate further.
@@ -74,3 +74,11 @@ Required order for structural/codebase questions:
 
 Broad Read/Glob/Grep exploration before this CodeGraph check is explicitly discouraged for structural/codebase questions.
 <!-- /gentle-ai:codegraph-guidance -->
+
+<!-- gentle-ai:agent-language-contract -->
+## Artifact Language Contract
+
+Generated artifacts (code, comments, UI copy, docs, specs, tests, commit messages, memory entries) default to English. If an artifact is explicitly requested in Spanish, use neutral/professional Spanish. Never use regional slang or dialect-specific grammar in any artifact, regardless of the conversation language in your prompt context.
+
+Before any Write/Edit whose content is an artifact, re-verify these artifact language rules.
+<!-- /gentle-ai:agent-language-contract -->

@@ -1,7 +1,7 @@
 {
   "autoUpdatesChannel": "latest",
   "editorMode": "normal",
-  "effortLevel": "high",
+  "effortLevel": "low",
   "enabledPlugins": {
     "context7@claude-plugins-official": true,
     "engram@engram": true,
@@ -26,7 +26,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -49,7 +56,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -61,7 +75,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -84,7 +105,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -123,6 +151,22 @@
           }
         ],
         "matcher": "*"
+      },
+      {
+        "hooks": [
+          {
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -138,7 +182,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -149,7 +200,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -160,7 +218,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -171,7 +236,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -182,7 +254,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -210,7 +289,14 @@
       {
         "hooks": [
           {
-            "command": "if [ -f 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd' ]; then 'C:/Users/iseoane/.orca/agent-hooks/claude-hook.cmd'; else cat \u003e/dev/null 2\u003e\u00261 || :; fi",
+            "args": [
+              "--headless",
+              "C:\\WINDOWS\\System32\\cmd.exe",
+              "/d",
+              "/c",
+              "%USERPROFILE%\\.orca\\agent-hooks\\claude-hook.cmd"
+            ],
+            "command": "C:\\WINDOWS\\System32\\conhost.exe",
             "timeout": 10,
             "type": "command"
           }
@@ -220,18 +306,7 @@
   },
   "inputNeededNotifEnabled": false,
   "language": "Spanish",
-  "mcpServers": {
-    "context7": {
-      "args": [
-        "-y",
-        "--package=@upstash/context7-mcp@2.2.5",
-        "--",
-        "context7-mcp"
-      ],
-      "command": "npx"
-    }
-  },
-  "model": "sonnet",
+  "model": "opus",
   "outputStyle": "Neutral",
   "permissions": {
     "allow": [
