@@ -14,8 +14,11 @@
     "NOTE: that repo's own extras/windows-terminal/ file is NOT this palette --",
     "it was inherited unchanged from upstream oldworld.nvim. Do not copy it.",
     "A scheme of the same name inside settings.json takes precedence over a",
-    "fragment, so an existing inline Gentleman entry shadows this one. Values",
-    "are identical, so that is harmless."
+    "fragment, so an inline Gentleman entry there would shadow this one and",
+    "silently freeze its colours. Observed behaviour: a running Windows",
+    "Terminal drops the redundant inline copy on its next save once this",
+    "fragment provides the same name, leaving the fragment as the only source.",
+    "If an inline copy ever reappears, delete it rather than editing both."
   ],
 
   "schemes": [
