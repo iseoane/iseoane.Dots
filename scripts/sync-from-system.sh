@@ -66,6 +66,18 @@ if has_windows_mount; then
   cp "$WIN_HOME/.wezterm.lua" "$REPO_ROOT/wezterm/.wezterm.lua"
   echo "  synced wezterm/.wezterm.lua"
 
+  echo "== windows terminal colour schemes (fragment, windows side via /mnt/c) =="
+  # Only the fragment, never settings.json: that file is user-owned (machine
+  # profile GUIDs, paths) and Terminal's settings UI rewrites it. Guarded
+  # because a machine that has never run apply-to-system.sh won't have it yet.
+  WT_FRAGMENT="$WIN_HOME/AppData/Local/Microsoft/Windows Terminal/Fragments/Gentleman.Dots/gentleman.json"
+  if [ -f "$WT_FRAGMENT" ]; then
+    cp "$WT_FRAGMENT" "$REPO_ROOT/windows-terminal/gentleman.json"
+    echo "  synced windows-terminal/gentleman.json"
+  else
+    echo "  skip: fragment not deployed on this machine yet"
+  fi
+
   echo "== herdr powershell scripts (windows side via /mnt/c) =="
   # herdr-wt.ps1 is deployed to BOTH PowerShell dirs; the PS7 copy is canonical
   # (it's the shell herdr and the terminal actually run), so sync from there.

@@ -45,6 +45,11 @@ starship/starship.toml     -> copied to ~/.config/starship.toml on BOTH
 ssh/config                 -> copied to ~/.ssh/config AND Windows .ssh/config
                               (never keys, never known_hosts)
 wezterm/.wezterm.lua       -> copied to Windows $HOME (via /mnt/c)
+windows-terminal/gentleman.json
+                           -> copied to Windows AppData/Local/Microsoft/
+                              Windows Terminal/Fragments/Gentleman.Dots/
+                              (adds the colour schemes; settings.json itself
+                              stays user-owned and is never written)
 herdr/config.toml          -> copied to ~/.config/herdr/config.toml AND
                               Windows AppData/Roaming/herdr/config.toml
 herdr/scripts/herdr-wt     -> copied to ~/.config/herdr/scripts/ (Debian/WSL)
@@ -107,6 +112,75 @@ machine-local overrides per Claude Code convention.
 - **herdr/**, **wezterm/**, **powershell/**, **nvim/**, **starship/**:
   **copied** — they live at different paths per OS (or only exist on one
   side), so a symlink can't cover both. Details below.
+
+### colour theme: Gentleman, across wezterm, Starship and herdr
+
+wezterm, Starship and herdr all render the **Gentleman** palette -- the same
+one `gentle-ai` injects into its agents, and the one `nvim` already uses via
+the `gentleman-kanagawa-blur` colorscheme (`nvim/lua/plugins/colorscheme.lua`).
+
+The canonical source is `Gentleman-Programming/gentleman-kanagawa-blur`:
+`lua/gentleman_kanagawa_blur/variant.lua` for the semantic roles, and
+`extras/ghostty/gentleman-kanagawa-blur` for the 16 ANSI slots plus
+background/foreground/cursor/selection. (Two traps: that repo's
+`extras/alacritty/` and `extras/kitty/` files were inherited from the upstream
+`oldworld.nvim` and do *not* carry the Gentleman hexes; and `gentle-ai`'s
+`internal/tui/styles/styles.go` is Rose Pine -- that's its installer chrome,
+not the theme. The theme gentle-ai owns is the one it injects in
+`internal/components/theme/inject.go`.)
+
+Each tool expresses it differently, because each supports a different amount:
+
+| Tool | Mechanism | Selectable? |
+|------|-----------|-------------|
+| wezterm | `config.color_schemes` in `.wezterm.lua`, with `config.color_scheme` picking one | Yes -- `"Gentleman Blur"` (active), `"Gentleman Sakura"`, or any wezterm built-in such as the previous `"rose-pine-moon"` |
+| Windows Terminal | `windows-terminal/gentleman.json`, a **fragment** deployed to `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\Gentleman.Dots\` | Yes -- `Gentleman` (active) or `Gentleman Sakura`, pickable in the settings UI |
+| Starship | `[palettes.*]` in `starship.toml`, selected by `palette = ...` | Yes -- `gentleman-blur` (active) or `gentleman-sakura`; comment `palette` out to fall back to the terminal's ANSI colours |
+| Neovim | the `gentleman-kanagawa-blur` colorscheme (`nvim/lua/plugins/colorscheme.lua`) | Yes -- it's the LazyVim `colorscheme` opt |
+| herdr | `[theme.custom]` token overrides on top of a built-in base | **No** -- herdr 0.8.2 has a fixed list of built-in theme names and no user-defined ones, so the preset is a commented block you toggle by hand |
+
+Two details worth knowing before editing these:
+
+- The schemes are defined **inline in `.wezterm.lua`**, not as a
+  `colors/*.toml` file, because only `.wezterm.lua` itself is copied to the
+  Windows `$HOME` (see the deployment map above) -- a sidecar file wouldn't
+  ship. For the same reason the old top-level `config.colors` block is gone:
+  it overrode the scheme's `selection_bg`/`selection_fg` entry-by-entry, so
+  rose-pine's selection would have survived into the new theme.
+- The Starship palette deliberately reuses Starship's **standard colour
+  names** (`green`, `cyan`, `bright-black`, ...). A palette entry shadows the
+  built-in of the same name, so the default prompt -- which styles its modules
+  as `bold green`, `bold cyan` and so on -- picks the theme up with no module
+  rewrites at all. Verified on starship 1.26.0; if a future version drops that
+  shadowing, every module needs an explicit `style =` instead.
+
+**Windows Terminal is deliberately only half-managed.** The repo ships the
+schemes as a fragment, which is the supported way to add colours without
+touching `settings.json` -- that file holds machine-specific profile GUIDs and
+paths and is rewritten by Terminal's own settings UI, so versioning it whole
+would be fragile. Which scheme is *active* therefore stays a `settings.json` /
+UI choice and is not reapplied by `apply-to-system.sh`. Note also that a scheme
+of the same name inside `settings.json` shadows the fragment's; the inline
+`Gentleman` entry there is byte-identical, so it makes no difference.
+
+**Two upstream inconsistencies are corrected here, both on ANSI slots 5 and 13.**
+`variant.lua` defines `purple` (`#A3B5D6`) and `magenta` (`#FF8DD7`) as separate
+colours, and upstream is not self-consistent about which one lands in the ANSI
+magenta slots: its ghostty export uses magenta, its Neovim `:terminal` mapping
+uses purple. This repo picks **magenta** everywhere, so all five surfaces render
+one identical 16-colour palette:
+
+- `nvim/lua/plugins/colorscheme.lua` re-sets `terminal_color_5`/`13` in an
+  `init()` autocmd after the colorscheme loads, so a `:terminal` buffer inside
+  Neovim matches the shell outside it.
+- `starship.toml`'s `purple` entry is `#FF8DD7`, not `#A3B5D6` -- Starship's
+  `purple` *is* the ANSI 5 slot. The muted one is still available in the palette
+  as `soft-purple` if you'd rather have lavender on `git_branch`.
+
+herdr's preset diverges from the canonical palette on purpose: `accent` and
+`blue` are `#6FA0AF`, a desaturated stand-in for the canonical `#7FB4CA`, so
+the sidebar and borders stay quiet next to pane contents. That value comes
+verbatim from Gentleman.Dots' own `herdr/config.toml`.
 
 ### herdr: one config file, two OSes
 

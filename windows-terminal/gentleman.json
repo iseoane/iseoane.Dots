@@ -1,0 +1,75 @@
+{
+  "$schema": "https://aka.ms/terminal-profiles-schema",
+
+  "//": [
+    "Windows Terminal fragment: adds the Gentleman colour schemes without",
+    "touching settings.json, which stays user-owned (it holds machine-specific",
+    "profile GUIDs and paths and is rewritten by Terminal's own settings UI).",
+    "Deployed by scripts/apply-to-system.sh to",
+    "%LOCALAPPDATA%\\Microsoft\\Windows Terminal\\Fragments\\Gentleman.Dots\\.",
+    "Same palette as wezterm's Gentleman Blur/Sakura schemes, the",
+    "gentleman-blur Starship palette and herdr's [theme.custom]. Canonical",
+    "source: Gentleman-Programming/gentleman-kanagawa-blur ->",
+    "lua/gentleman_kanagawa_blur/variant.lua + extras/ghostty/.",
+    "NOTE: that repo's own extras/windows-terminal/ file is NOT this palette --",
+    "it was inherited unchanged from upstream oldworld.nvim. Do not copy it.",
+    "A scheme of the same name inside settings.json takes precedence over a",
+    "fragment, so an existing inline Gentleman entry shadows this one. Values",
+    "are identical, so that is harmless."
+  ],
+
+  "schemes": [
+    {
+      "name": "Gentleman",
+
+      "background": "#06080F",
+      "foreground": "#F3F6F9",
+      "cursorColor": "#E0C15A",
+      "selectionBackground": "#263356",
+
+      "black": "#06080F",
+      "red": "#CB7C94",
+      "green": "#B7CC85",
+      "yellow": "#FFE066",
+      "blue": "#7FB4CA",
+      "purple": "#FF8DD7",
+      "cyan": "#7AA89F",
+      "white": "#F3F6F9",
+
+      "brightBlack": "#8A8FA3",
+      "brightRed": "#DE8FA8",
+      "brightGreen": "#D1E8A9",
+      "brightYellow": "#FFF7B1",
+      "brightBlue": "#A3D4D5",
+      "brightPurple": "#FFAEEA",
+      "brightCyan": "#7FB4CA",
+      "brightWhite": "#F3F6F9"
+    },
+    {
+      "name": "Gentleman Sakura",
+
+      "background": "#1A2033",
+      "foreground": "#F3F6F9",
+      "cursorColor": "#FFB2D7",
+      "selectionBackground": "#FFB2D7",
+
+      "black": "#1A2033",
+      "red": "#FF6F99",
+      "green": "#B4E7C7",
+      "yellow": "#FFFF00",
+      "blue": "#7CB1DD",
+      "purple": "#FFB2D7",
+      "cyan": "#96D8F6",
+      "white": "#F3F6F9",
+
+      "brightBlack": "#8BA7C1",
+      "brightRed": "#FF89B5",
+      "brightGreen": "#D7FFEA",
+      "brightYellow": "#FFF6A1",
+      "brightBlue": "#B3E6FF",
+      "brightPurple": "#FFD7F2",
+      "brightCyan": "#CBF0FF",
+      "brightWhite": "#FFFFFF"
+    }
+  ]
+}

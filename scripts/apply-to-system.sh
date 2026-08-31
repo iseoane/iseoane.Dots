@@ -103,6 +103,16 @@ if has_windows_mount; then
   backup_if_needed "$WIN_HOME/.wezterm.lua"
   copy "$REPO_ROOT/wezterm/.wezterm.lua" "$WIN_HOME/.wezterm.lua"
 
+  # Windows Terminal reads per-user fragments from this directory; they add
+  # colour schemes without touching settings.json, which stays user-owned (it
+  # holds machine-specific profile GUIDs and is rewritten by Terminal's own
+  # settings UI). Picking the scheme is still a settings.json / UI choice.
+  echo "== windows terminal colour schemes (fragment, windows side via /mnt/c) =="
+  WT_FRAGMENTS="$WIN_HOME/AppData/Local/Microsoft/Windows Terminal/Fragments/Gentleman.Dots"
+  mkdir -p "$WT_FRAGMENTS"
+  backup_if_needed "$WT_FRAGMENTS/gentleman.json"
+  copy "$REPO_ROOT/windows-terminal/gentleman.json" "$WT_FRAGMENTS/gentleman.json"
+
   echo "== herdr (copy, windows side via /mnt/c) =="
   backup_if_needed "$WIN_HOME/AppData/Roaming/herdr/config.toml"
   copy "$REPO_ROOT/herdr/config.toml" "$WIN_HOME/AppData/Roaming/herdr/config.toml"

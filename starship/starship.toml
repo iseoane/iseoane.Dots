@@ -13,3 +13,73 @@ scan_timeout = 120
 # git status shells out; give it more room under the same AV/encryption overhead
 # than the 500ms default before it too times out silently.
 command_timeout = 1000
+
+# ── Color theme ──────────────────────────────────────────────────────────
+# Gentleman palette (the theme gentle-ai injects into its agents), matching
+# wezterm's "Gentleman Blur" scheme, herdr's [theme.custom] and the
+# gentleman-kanagawa-blur Neovim colorscheme.
+#
+# Canonical source: Gentleman-Programming/gentleman-kanagawa-blur ->
+# lua/gentleman_kanagawa_blur/variant.lua (palettes `blur` and
+# `sakura_night_blur`).
+#
+# The entries deliberately reuse Starship's *standard* color names. A palette
+# entry shadows the built-in color of the same name, so the default prompt
+# (which styles its modules as "bold green", "bold cyan", ...) picks the theme
+# up without rewriting a single module. Verified on starship 1.26.0.
+#
+# To switch themes, point `palette` at another block below, or comment it out
+# to fall back to the terminal's own 16 ANSI colors.
+palette = "gentleman-blur"
+
+[palettes.gentleman-blur]
+black = "#06080F"
+red = "#CB7C94"
+green = "#B7CC85"
+yellow = "#FFE066"
+blue = "#7FB4CA"
+# Starship's `purple` IS the ANSI 5 slot, so it takes the palette's *magenta*
+# (#FF8DD7), matching wezterm, Windows Terminal, ghostty and nvim's :terminal.
+# variant.lua's separate, muted `purple` (#A3B5D6) is below as `soft-purple`.
+purple = "#FF8DD7"
+cyan = "#7AA89F"
+white = "#F3F6F9"
+bright-black = "#8A8FA3"
+bright-red = "#DE8FA8"
+bright-green = "#D1E8A9"
+bright-yellow = "#FFF7B1"
+bright-blue = "#A3D4D5"
+bright-purple = "#FFAEEA"
+bright-cyan = "#7FB4CA"
+bright-white = "#F3F6F9"
+# Extra roles from variant.lua, for any module styled explicitly later on.
+accent = "#E0C15A"       # the gold "Ray-Ban" accent
+orange = "#DEBA87"       # warning
+soft-purple = "#A3B5D6"  # variant.lua's `purple`; swap into `purple` above to
+                         # get the muted lavender on git_branch instead
+lavender = "#B99BF2"     # variant.lua's `bright_purple`
+muted = "#5C6170"
+selection = "#263356"
+
+[palettes.gentleman-sakura]
+black = "#1A2033"
+red = "#FF6F99"
+green = "#B4E7C7"
+yellow = "#FFFF00"
+blue = "#7CB1DD"
+purple = "#B3E6FF"
+cyan = "#96D8F6"
+white = "#F3F6F9"
+bright-black = "#8BA7C1"
+bright-red = "#FF89B5"
+bright-green = "#D7FFEA"
+bright-yellow = "#FFF6A1"
+bright-blue = "#B3E6FF"
+bright-purple = "#B3E6FF"
+bright-cyan = "#CBF0FF"
+bright-white = "#FFFFFF"
+accent = "#FFB2D7"
+orange = "#DEBA87"
+magenta = "#FFB2D7"
+muted = "#8BA7C1"
+selection = "#FFB2D7"
