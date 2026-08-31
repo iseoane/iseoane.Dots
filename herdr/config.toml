@@ -30,10 +30,12 @@ auto_switch = false
 # canonical palette lives in Gentleman-Programming/gentleman-kanagawa-blur
 # (lua/gentleman_kanagawa_blur/variant.lua, palette `blur`).
 #
-# Note the deliberate divergence upstream makes: `accent` and `blue` are
-# #6FA0AF, a desaturated stand-in for the canonical blue #7FB4CA, so Herdr
-# chrome stays quiet next to the pane contents. Upstream's own comment on that
-# line reads: "Match Pi's Gentle theme, with a muted cyan for Herdr chrome."
+# `accent` and `blue` are #6FA0AF, the muted cyan upstream picked here rather
+# than the brighter #7FB4CA that ghostty exports. Upstream's own comment on
+# that line reads: "Match Pi's Gentle theme, with a muted cyan for Herdr
+# chrome." This is no longer a herdr-only value: since Gentleman.Dots' fish
+# config defines no blue at all, #6FA0AF is now the blue across wezterm,
+# Windows Terminal, Starship and nvim's :terminal too.
 #
 # Other tokens [theme.custom] accepts, if the chrome ever needs more grounding:
 # base, text, subtext0, surface0/1/2, overlay0/1, teal, peach, lavender,

@@ -167,12 +167,26 @@ you retune either. Note also that a scheme
 of the same name inside `settings.json` shadows the fragment's; the inline
 `Gentleman` entry there is byte-identical, so it makes no difference.
 
-**Two upstream inconsistencies are corrected here, both on ANSI slots 5 and 13.**
+**The reference for the per-role values is Gentleman.Dots' fish config**
+(`GentlemanFish/fish/config.fish`, byte-identical to the colorscheme's own
+`extras/fish/blur.fish`). It is the one place upstream writes the palette out
+by semantic role rather than by ANSI slot, so it settles what "the Gentleman
+red" actually is. Every role it defines -- foreground, selection, comment, red,
+yellow, green, cyan and its `pink` (the magenta slot) -- is used verbatim here.
+
+It defines no **blue**, though, so that one value comes from upstream's herdr
+config: `#6FA0AF`, a muted cyan, rather than the brighter `#7FB4CA` its ghostty
+export uses. `#7FB4CA` survives only on bright cyan (slot 14). Note that herdr
+and fish do *not* otherwise agree: herdr's `yellow` is `#DEBA87`, which is
+fish's **orange**, because herdr's fixed six-token chrome has no orange slot to
+put it in. fish wins that one -- yellow stays `#FFE066`.
+
+**One upstream inconsistency is also corrected, on ANSI slots 5 and 13.**
 `variant.lua` defines `purple` (`#A3B5D6`) and `magenta` (`#FF8DD7`) as separate
 colours, and upstream is not self-consistent about which one lands in the ANSI
 magenta slots: its ghostty export uses magenta, its Neovim `:terminal` mapping
-uses purple. This repo picks **magenta** everywhere, so all five surfaces render
-one identical 16-colour palette:
+uses purple. fish maps its `pink` (`#FF8DD7`) to magenta, so **magenta** wins
+here and all five surfaces render one identical 16-colour palette:
 
 - `nvim/lua/plugins/colorscheme.lua` re-sets `terminal_color_5`/`13` in an
   `init()` autocmd after the colorscheme loads, so a `:terminal` buffer inside
@@ -181,10 +195,9 @@ one identical 16-colour palette:
   `purple` *is* the ANSI 5 slot. The muted one is still available in the palette
   as `soft-purple` if you'd rather have lavender on `git_branch`.
 
-herdr's preset diverges from the canonical palette on purpose: `accent` and
-`blue` are `#6FA0AF`, a desaturated stand-in for the canonical `#7FB4CA`, so
-the sidebar and borders stay quiet next to pane contents. That value comes
-verbatim from Gentleman.Dots' own `herdr/config.toml`.
+herdr's `accent` and `blue` are both `#6FA0AF`, copied verbatim from
+Gentleman.Dots' own `herdr/config.toml`; as explained above, that value is now
+the blue everywhere else too.
 
 ### herdr: one config file, two OSes
 

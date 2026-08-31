@@ -31,7 +31,7 @@ config.color_schemes = {
 			"#cb7c94",
 			"#b7cc85",
 			"#ffe066",
-			"#7fb4ca",
+			"#6fa0af",
 			"#ff8dd7",
 			"#7aa89f",
 			"#f3f6f9",

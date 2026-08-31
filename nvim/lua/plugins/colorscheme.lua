@@ -47,17 +47,24 @@ return {
       name = "gentleman-kanagawa-blur",
       priority = 1000,
       init = function()
-        -- Upstream maps the :terminal ANSI 5/13 slots to the palette's *purple*
-        -- (#A3B5D6 / #B99BF2), but every terminal export of the same theme --
-        -- its own extras/ghostty, our wezterm "Gentleman Blur" scheme and the
-        -- Windows Terminal fragment -- maps them to *magenta* (#FF8DD7 /
-        -- #FFAEEA). variant.lua defines both colors separately, so this is an
-        -- upstream inconsistency, not a missing value. Realign them so a
-        -- :terminal buffer inside nvim renders the same 16 colors as the shell
-        -- outside it.
+        -- Two realignments so a :terminal buffer inside nvim renders exactly
+        -- the same 16 colors as the shell outside it.
+        --
+        -- Slots 5/13: upstream maps them to the palette's *purple* (#A3B5D6 /
+        -- #B99BF2), but every terminal export of the same theme -- its own
+        -- extras/ghostty, our wezterm "Gentleman Blur" scheme and the Windows
+        -- Terminal fragment -- maps them to *magenta* (#FF8DD7 / #FFAEEA).
+        -- variant.lua defines both colors separately, so this is an upstream
+        -- inconsistency, not a missing value.
+        --
+        -- Slot 4: #6FA0AF, the muted cyan Gentleman.Dots uses for blue. Its
+        -- fish config -- the reference for every other role here -- defines no
+        -- blue at all, so the value comes from its herdr config instead. The
+        -- brighter #7FB4CA that ghostty exports stays only on slot 14.
         vim.api.nvim_create_autocmd("ColorScheme", {
           pattern = "gentleman-kanagawa-blur",
           callback = function()
+            vim.g.terminal_color_4 = "#6FA0AF"
             vim.g.terminal_color_5 = "#FF8DD7"
             vim.g.terminal_color_13 = "#FFAEEA"
           end,

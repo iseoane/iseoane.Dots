@@ -37,7 +37,7 @@ black = "#06080F"
 red = "#CB7C94"
 green = "#B7CC85"
 yellow = "#FFE066"
-blue = "#7FB4CA"
+blue = "#6FA0AF"
 # Starship's `purple` IS the ANSI 5 slot, so it takes the palette's *magenta*
 # (#FF8DD7), matching wezterm, Windows Terminal, ghostty and nvim's :terminal.
 # variant.lua's separate, muted `purple` (#A3B5D6) is below as `soft-purple`.
