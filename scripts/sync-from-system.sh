@@ -41,6 +41,28 @@ echo "== wezterm (linux/wsl canonical copy) =="
 cp "$HOME/.config/wezterm/wezterm.lua" "$REPO_ROOT/wezterm/.wezterm.lua"
 echo "  synced wezterm/.wezterm.lua"
 
+echo "== Omarchy appearance and Edge flags =="
+HYPR_LOOK="$HOME/.config/hypr/looknfeel.lua"
+if [ -f "$HYPR_LOOK" ]; then
+  HYPR_FRAGMENT_TMP="$(mktemp)"
+  if awk '
+    $0 == "-- >>> iseoane.Dots: wezterm-blur >>>" { capture=1; next }
+    $0 == "-- <<< iseoane.Dots: wezterm-blur <<<" { capture=0; found=1; next }
+    capture { print }
+    END { if (!found) exit 1 }
+  ' "$HYPR_LOOK" >"$HYPR_FRAGMENT_TMP"; then
+    mv "$HYPR_FRAGMENT_TMP" "$REPO_ROOT/omarchy/hypr-looknfeel.lua"
+    echo "  synced omarchy/hypr-looknfeel.lua"
+  else
+    rm -f "$HYPR_FRAGMENT_TMP"
+    echo "  skip: managed wezterm-blur block not found"
+  fi
+fi
+if grep -Fxq -- '--disable-features=Vulkan' "$HOME/.config/microsoft-edge-stable-flags.conf" 2>/dev/null; then
+  printf '%s\n' '--disable-features=Vulkan' >"$REPO_ROOT/edge/microsoft-edge-stable-flags.conf"
+  echo "  synced edge/microsoft-edge-stable-flags.conf"
+fi
+
 echo "== opencode (safe declarative config) =="
 node "$REPO_ROOT/opencode/manage.mjs" sync
 

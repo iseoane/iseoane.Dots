@@ -1,8 +1,8 @@
 # iseoane.Dots
 
 Personal dotfiles: zsh, PowerShell 7, Starship, wezterm, herdr, Neovim, Pi,
-OpenCode and Claude Code config — one repo shared between a Debian/WSL machine and its
-Windows host, with the same terminal experience (Starship prompt, history
+OpenCode and Claude Code config — one repo shared between Omarchy/Linux, Debian/WSL
+and Windows hosts, with the same terminal experience (Starship prompt, history
 suggestions, worktree helpers) on both sides.
 
 Line endings are normalized to LF via `.gitattributes` (CRLF only for
@@ -53,7 +53,14 @@ pi/                         -> settings, models, MCP, local extensions, themes a
                                npm manifests restored to ~/.pi/agent/ on both systems
 ssh/config                 -> copied to ~/.ssh/config AND Windows .ssh/config
                               (never keys, never known_hosts)
-wezterm/.wezterm.lua       -> copied to Windows $HOME (via /mnt/c)
+wezterm/.wezterm.lua       -> copied to ~/.config/wezterm/wezterm.lua on Linux
+                              and Windows $HOME (via /mnt/c); on Omarchy, WezTerm,
+                              Zsh, Starship and its Nerd Font are installed if absent
+omarchy/hypr-looknfeel.lua -> merged as a marked block into ~/.config/hypr/looknfeel.lua
+                              (existing Hyprland customizations are preserved)
+edge/microsoft-edge-stable-flags.conf
+                           -> its Vulkan workaround is added to Edge's user flags
+                              without replacing unrelated flags
 windows-terminal/xeoTheme.json
                             -> copied to Windows AppData/Local/Microsoft/
                               Windows Terminal/Fragments/xeoTheme/
@@ -120,8 +127,9 @@ machine-local overrides per Claude Code convention.
   node-guarded gitnexus hooks). Each side's statusline scripts are
   versioned next to them.
 - **herdr/**, **wezterm/**, **powershell/**, **nvim/**, **starship/**:
-  **copied** — they live at different paths per OS (or only exist on one
-  side), so a symlink can't cover both. Details below.
+  **copied with timestamped backups** — they live at different paths per OS
+  (or only exist on one side), so a symlink can't cover both. The small Omarchy
+  blur fragment and Edge flag are merged instead, preserving unrelated live config.
 - **pi/** and **opencode/**: copied through strict allowlist managers. Config,
   themes and local resources are versioned; credentials, sessions, histories,
   databases, logs, caches and `node_modules` are never copied. Pi dependencies

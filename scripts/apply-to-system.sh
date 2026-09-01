@@ -43,6 +43,12 @@ has_windows_command() {
   cmd.exe /d /c "where $1 >nul 2>nul" >/dev/null 2>&1
 }
 
+if command -v omarchy >/dev/null 2>&1 && command -v pacman >/dev/null 2>&1; then
+  echo "== Omarchy terminal prerequisites =="
+  # Runs in the caller's visible terminal, so Omarchy may request sudo normally.
+  omarchy pkg add zsh starship wezterm ttf-jetbrains-mono-nerd-basic
+fi
+
 echo "== zsh (plugins + copy) =="
 mkdir -p "$HOME/.zsh"
 install_zsh_plugin \
@@ -55,6 +61,13 @@ install_zsh_plugin \
   "$HOME/.zsh/zsh-completions"
 copy_with_backup "$REPO_ROOT/zsh/.zshrc" "$HOME/.zshrc"
 copy_with_backup "$REPO_ROOT/zsh/.zprofile" "$HOME/.zprofile"
+if command -v zsh >/dev/null 2>&1; then
+  ZSH_BIN="$(command -v zsh)"
+  if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$ZSH_BIN" ]; then
+    echo "  changing login shell to $ZSH_BIN (password may be requested)"
+    chsh -s "$ZSH_BIN" "$USER"
+  fi
+fi
 
 echo "== starship (install binary + copy config) =="
 # .zshrc unconditionally does `eval "$(starship init zsh)"`, so the binary
@@ -71,6 +84,24 @@ copy "$REPO_ROOT/starship/starship.toml" "$HOME/.config/starship.toml"
 echo "== wezterm (copy, linux/wsl side) =="
 backup_if_needed "$HOME/.config/wezterm/wezterm.lua"
 copy "$REPO_ROOT/wezterm/.wezterm.lua" "$HOME/.config/wezterm/wezterm.lua"
+if command -v xdg-terminal-exec >/dev/null 2>&1 && [ -f /usr/share/applications/org.wezfurlong.wezterm.desktop ]; then
+  prefer_config_line \
+    "org.wezfurlong.wezterm.desktop" \
+    "$HOME/.config/xdg-terminals.list"
+  echo "  default terminal -> WezTerm"
+fi
+
+echo "== Omarchy appearance and Edge flags (non-destructive merge) =="
+if command -v omarchy >/dev/null 2>&1; then
+  upsert_managed_block \
+    "$REPO_ROOT/omarchy/hypr-looknfeel.lua" \
+    "$HOME/.config/hypr/looknfeel.lua" \
+    "wezterm-blur" \
+    "--"
+fi
+ensure_config_line \
+  "$(cat "$REPO_ROOT/edge/microsoft-edge-stable-flags.conf")" \
+  "$HOME/.config/microsoft-edge-stable-flags.conf"
 
 echo "== opencode (safe declarative config) =="
 node "$REPO_ROOT/opencode/manage.mjs" apply
@@ -166,17 +197,12 @@ if has_windows_mount; then
   # Windows builds are preview-only for now (`herdr update` refuses on stable),
   # so force the channel back to preview on this side regardless of the repo value.
   sed -i 's/^channel = "stable"$/channel = "preview"/' "$WIN_HOME/AppData/Roaming/herdr/config.toml"
-  # Uncomment the WINDOWS ONLY [terminal] default_shell block so herdr panes
-  # spawn PowerShell 7 instead of Windows PowerShell 5.1. The repo copy keeps
-  # it commented because the same file is applied on Debian/WSL, where that
-  # path doesn't exist and would break pane spawning.
-  sed -i -e 's/^# \(\[terminal\]\)$/\1/' -e "s/^# \(default_shell = '.*pwsh\.exe'\)$/\1/" \
+  # The shared config already has [terminal]. Add only the Windows shell key;
+  # Linux keeps following $SHELL while Windows must avoid PowerShell 5.1.
+  sed -i "/^\[terminal\]$/a default_shell = 'C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe'" \
     "$WIN_HOME/AppData/Roaming/herdr/config.toml"
-  # sed exits 0 even when nothing matches; fail loudly if the commented block
-  # ever drifts and the uncomment silently no-ops (panes would fall back to 5.1).
-  grep -q '^\[terminal\]$' "$WIN_HOME/AppData/Roaming/herdr/config.toml" &&
-    grep -q "^default_shell = '.*pwsh\.exe'$" "$WIN_HOME/AppData/Roaming/herdr/config.toml" ||
-    { echo "error: [terminal] default_shell uncomment did not take effect" >&2; exit 1; }
+  grep -q "^default_shell = '.*pwsh\.exe'$" "$WIN_HOME/AppData/Roaming/herdr/config.toml" ||
+    { echo "error: Windows [terminal] default_shell insertion failed" >&2; exit 1; }
 
   # Link the local herdr-agent-sound plugin on the Windows herdr (sound
   # workaround for herdr issue #1657; the native Windows player is broken).

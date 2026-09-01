@@ -1,25 +1,15 @@
 onboarding = false
-# herdr configuration using the shared Tokyo Night xeoTheme palette.
-# This file is copied into ~/.config/herdr/config.toml during installation.
-# Shared across Debian/WSL and Windows.
 
 [update]
 channel = "stable"
 
+# Mirrors the Omarchy tmux config in config/tmux/tmux.conf
+# tmux session -> herdr workspace, tmux window -> herdr tab, tmux pane -> herdr pane
+
 [theme]
-# Tokyo Night provides complete-token fallback; the custom block also applies
-# the fuchsia active-window border as the shared accent.
-#
-# Built-in themes (herdr 0.8.2): catppuccin, catppuccin-latte, terminal,
-# tokyo-night, tokyo-night-day, dracula, nord, gruvbox, gruvbox-light,
-# one-dark, one-light, solarized, solarized-light, kanagawa, kanagawa-lotus,
-# rose-pine, rose-pine-dawn, vesper. Herdr has no user-defined named themes,
-# so a custom palette can only be expressed as [theme.custom] overrides.
+# Tokyo Night fallback; custom tokens below also use the fuchsia window-border accent.
 name = "tokyo-night"
 
-auto_switch = false
-
-# ── System colour preset (active) ─────────────────────────────────
 [theme.custom]
 panel_bg = "#1A1B26"
 text = "#A9B1D6"
@@ -39,94 +29,89 @@ sidebar_bg = "#13141C"
 active_row_bg = "#24283B"
 selection_bg = "#292E42"
 
-[ui]
-accent = "#FF2E9A"
-prompt_new_tab_name = false
-agent_panel_sort = "priority"
-show_agent_labels_on_pane_borders = true
-pane_gaps = false
-copy_on_select = true
-
-[ui.sidebar.agents]
-row_gap = 0
-rows = [
-   ["state_icon", "workspace"],
-   ["terminal_title_stripped"],
-]
-
-[ui.sidebar.spaces]
-row_gap = 1
-rows = [
-   ["state_icon", "workspace"],
-   ["branch", "git_status"],
-]
-
-[ui.toast.clipboard]
-enabled=false
+[terminal]
+# Matches -c "#{pane_current_path}" on every split, window, and session
+new_cwd = "follow"
 
 [keys]
-# Match tmux/Zellij-style prefix muscle memory.
-prefix = "ctrl+a"
+prefix = "ctrl+space"
 
-# Move between agents in the sidebar.
-# Avoid Herdr's built-in prefix+shift+j/k pane-swap bindings.
-previous_agent = "prefix+alt+k"
-next_agent = "prefix+alt+j"
+# Config and help
+reload_config = "prefix+q"
+help = "prefix+?"
+detach = "prefix+d"
 
-# Jump straight to agent N (1..9) as listed in the sidebar.
-# Use Ctrl after the prefix: Alt+number is owned by skhd/yabai spaces,
-# and Shift+number did not reach Herdr reliably in the current terminal setup.
-focus_agent = "prefix+ctrl+1..9"
+# Copy mode
+copy_mode = "prefix+["
 
-# Open the herdr-file-viewer split pane (git-aware file browser).
-# Windows-specific action (PowerShell). On Linux/macOS the plugin exposes
-# "herdr-file-viewer.open-file-viewer" instead, so this binding only works on
-# the Windows side where the plugin is installed.
-[[keys.command]]
-key = "prefix+alt+f"
-type = "plugin_action"
-command = "herdr-file-viewer.open-file-viewer-windows"
-description = "file-viewer: open"
+# Panes
+split_horizontal = ["prefix+h", "alt+enter"]
+split_vertical = ["prefix+v", "alt+shift+enter"]
+close_pane = ["prefix+x", "alt+esc"]
+zoom = "prefix+z"
+last_pane = "prefix+;"
 
-# Toggle the reviewr code-review sidebar (diffs + line comments + PR tab).
-# Its default binding is cmd+r (macOS only), so we bind our own here.
-[[keys.command]]
-key = "prefix+alt+r"
-type = "plugin_action"
-command = "persiyanov.reviewr.toggle"
-description = "reviewr: toggle review sidebar"
+focus_pane_left = "ctrl+alt+left"
+focus_pane_down = "ctrl+alt+down"
+focus_pane_up = "ctrl+alt+up"
+focus_pane_right = "ctrl+alt+right"
 
-# Open the focused pane's branch PR in the browser (gh-pr).
-# The sidebar PR-status label updates automatically on pane focus / worktree open.
-[[keys.command]]
-key = "prefix+alt+o"
-type = "plugin_action"
-command = "gh-pr.open-pr"
-description = "gh-pr: open PR in browser"
+resize_mode = ["prefix+ctrl+left", "prefix+ctrl+down", "prefix+ctrl+up", "prefix+ctrl+right"]
 
-[keys.indexed]
-workspaces = "ctrl"
-agents = "ctrl+shift"
+# Like resize-pane on C-M-S-arrows
+resize_pane_left = "ctrl+alt+shift+left"
+resize_pane_down = "ctrl+alt+shift+down"
+resize_pane_up = "ctrl+alt+shift+up"
+resize_pane_right = "ctrl+alt+shift+right"
+
+# No tmux equivalent; herdr's default prefix+shift+p is taken by previous session
+rename_pane = "prefix+shift+o"
+
+# Windows -> tabs
+new_tab = "prefix+c"
+rename_tab = "prefix+r"
+close_tab = "prefix+k"
+switch_tab = ["prefix+1..9", "alt+1..9"]
+previous_tab = ["prefix+p", "alt+left"]
+next_tab = ["prefix+n", "alt+right"]
+
+# Like swap-window -t -1/+1 on M-S-Left/Right
+move_tab_previous = "alt+shift+left"
+move_tab_next = "alt+shift+right"
+
+# Sessions -> workspaces
+new_workspace = "prefix+shift+c"
+rename_workspace = "prefix+shift+r"
+close_workspace = "prefix+shift+k"
+previous_workspace = ["prefix+shift+p", "alt+up"]
+next_workspace = ["prefix+shift+n", "alt+down"]
+
+[ui]
+accent = "#FF2E9A"
+
+# tmux drew single-line dividers between adjacent panes and no outer frame
+pane_gaps = false
+pane_outer_borders = false
+
+# tmux had no scrollbar column beside its panes
+pane_scrollbars = false
+
+# kill-window and kill-session never asked
+confirm_close = false
+
+# automatic-rename gave windows a name without prompting
+prompt_new_tab_name = false
+
+# set -g mouse on
+mouse_capture = true
+
+# status-right had the zoom flag followed by #h
+tab_bar_right = [{ type = "zoom" }, { type = "hostname" }]
+
+# set -g set-titles on / set -g set-titles-string '#h:#W', where tmux's #W was
+# the basename of the pane cwd. This is what Hyprland shows in the group bar,
+# and it resolves on the server so remote sessions name the remote host.
+window_title = "{hostname}: {workspace}"
 
 [ui.toast]
-delivery = "herdr"
-
-[ui.sound]
-# Play herdr's built-in sounds on agent state changes. `enabled` turns sound
-# on; a sound fires when an agent finishes (done) or becomes blocked / needs
-# input (request). Set done_path/request_path to your own mp3s to override.
-# Works on both Windows and Debian/WSL (played by the local herdr client).
-enabled = true
-
-[ui.sound.agents]
-claude = "on"
-
-# ── WINDOWS ONLY — uncomment after copying this file to %APPDATA%\herdr ──
-# Without this, herdr panes on Windows spawn Windows PowerShell 5.1 (no
-# Starship, no PSReadLine predictions, no profile shims). PS7 is installed
-# from the MSI package (machine PATH, stable install dir); the full path keeps
-# pane spawning independent of the server's inherited PATH. Do NOT enable on
-# Debian/WSL: the path doesn't exist there and panes would fail to spawn
-# ($SHELL/zsh is already the default).
-# [terminal]
-# default_shell = 'C:\Program Files\PowerShell\7\pwsh.exe'
+delivery = "system"
