@@ -8,11 +8,13 @@ export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.npm-global/bin:$PATH"
 
 # ── Java ────────────────────────────────────────────────────────────
-# NOTE: fixed from the old .bashrc, which added $JAVA_HOME (not its bin/) to
-# PATH, so `java`/`javac` were never on PATH. Executables live in $JAVA_HOME/bin.
-export JAVA_HOME="/usr/lib/jvm/jdk1.8.0_301"
-export JRE_HOME="$JAVA_HOME/jre"
-export PATH="$JAVA_HOME/bin:$PATH"
+# Keep the legacy JDK available when installed, without adding a dead PATH on
+# machines where it is absent.
+if [[ -d /usr/lib/jvm/jdk1.8.0_301 ]]; then
+  export JAVA_HOME="/usr/lib/jvm/jdk1.8.0_301"
+  export JRE_HOME="$JAVA_HOME/jre"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
 
 export CODIGOFUENTE=/mnt/c/0-BackupVF/0.SVN/Codigo_Fuente
 
@@ -24,11 +26,14 @@ case ":$PATH:" in
 esac
 
 # ── Homebrew ────────────────────────────────────────────────────────
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+# Homebrew is optional; avoid an error at every login when it is not installed.
+if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
 
 # ── bun ─────────────────────────────────────────────────────────────
 export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
+[[ -d "$BUN_INSTALL/bin" ]] && export PATH="$BUN_INSTALL/bin:$PATH"
 
 # ── GitHub API token (raises unauthenticated 60/hr rate limit) ──────
 # engram's own update-check (and other tools) hits api.github.com on

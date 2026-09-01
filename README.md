@@ -131,9 +131,11 @@ machine-local overrides per Claude Code convention.
 ### colour theme: xeoTheme
 
 Zsh, PowerShell, wezterm, Windows Terminal, Starship, herdr, OpenCode and Pi
-share the `xeoTheme` dark palette. Its core colours are background `#08052B`, foreground
-`#D8DEE9`, accent `#E28CA9`, selection `#2E3440`, blue `#81A1C1`, green
-`#A3BE8C`, yellow `#E5C07B`, magenta `#B48EAD` and cyan `#88C0D0`.
+share `xeoTheme`, which mirrors the active Tokyo Night system palette. Its core colours
+are background `#1A1B26`, foreground `#A9B1D6`, selection `#292E42`, blue
+`#7AA2F7`, green `#9ECE6A`, yellow `#E0AF68`, magenta `#AD8EE6` and cyan
+`#449DAB`. Accent/cursor/focused controls use `#FF2E9A`, matching the custom
+Hyprland active-window border.
 
 Each tool expresses it differently, because each supports a different amount:
 

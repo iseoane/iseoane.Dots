@@ -1,5 +1,5 @@
 onboarding = false
-# herdr configuration using the shared xeoTheme palette.
+# herdr configuration using the shared Tokyo Night xeoTheme palette.
 # This file is copied into ~/.config/herdr/config.toml during installation.
 # Shared across Debian/WSL and Windows.
 
@@ -7,40 +7,40 @@ onboarding = false
 channel = "stable"
 
 [theme]
-# Use one-dark only as the complete-token fallback. The custom block supplies
-# the system palette used by wezterm, zsh, Starship and Windows Terminal.
+# Tokyo Night provides complete-token fallback; the custom block also applies
+# the fuchsia active-window border as the shared accent.
 #
 # Built-in themes (herdr 0.8.2): catppuccin, catppuccin-latte, terminal,
 # tokyo-night, tokyo-night-day, dracula, nord, gruvbox, gruvbox-light,
 # one-dark, one-light, solarized, solarized-light, kanagawa, kanagawa-lotus,
 # rose-pine, rose-pine-dawn, vesper. Herdr has no user-defined named themes,
 # so a custom palette can only be expressed as [theme.custom] overrides.
-name = "one-dark"
+name = "tokyo-night"
 
 auto_switch = false
 
 # ── System colour preset (active) ─────────────────────────────────
 [theme.custom]
-panel_bg = "#08052B"
-text = "#D8DEE9"
-subtext0 = "#8F93A5"
-surface0 = "#14141A"
-surface1 = "#202028"
-overlay0 = "#4C566A"
-overlay1 = "#8F93A5"
-accent = "#E28CA9"
-red = "#E28CA9"
-green = "#A3BE8C"
-yellow = "#E5C07B"
-blue = "#81A1C1"
-teal = "#88C0D0"
-peach = "#EED49F"
-sidebar_bg = "#14141A"
-active_row_bg = "#202028"
-selection_bg = "#2E3440"
+panel_bg = "#1A1B26"
+text = "#A9B1D6"
+subtext0 = "#414868"
+surface0 = "#13141C"
+surface1 = "#24283B"
+overlay0 = "#565F89"
+overlay1 = "#414868"
+accent = "#FF2E9A"
+red = "#F7768E"
+green = "#9ECE6A"
+yellow = "#E0AF68"
+blue = "#7AA2F7"
+teal = "#449DAB"
+peach = "#EB927B"
+sidebar_bg = "#13141C"
+active_row_bg = "#24283B"
+selection_bg = "#292E42"
 
 [ui]
-accent = "#E28CA9"
+accent = "#FF2E9A"
 prompt_new_tab_name = false
 agent_panel_sort = "priority"
 show_agent_labels_on_pane_borders = true

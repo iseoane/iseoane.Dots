@@ -1,60 +1,58 @@
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
--- xeoTheme palette shared with zsh, Starship, Herdr, OpenCode and Windows Terminal.
+-- xeoTheme mirrors the active Tokyo Night system palette; the cursor uses the fuchsia active window border.
 -- Defined inline because only .wezterm.lua is deployed to Windows.
 config.color_schemes = {
 	["xeoTheme"] = {
-		foreground = "#d8dee9",
-		background = "#08052b",
-		cursor_bg = "#e28ca9",
-		cursor_fg = "#14141a",
-		cursor_border = "#e28ca9",
-		selection_bg = "#2e3440",
-		selection_fg = "#d8dee9",
-		scrollbar_thumb = "#2e3440",
-		split = "#2e3440",
+		foreground = "#a9b1d6",
+		background = "#1a1b26",
+		cursor_bg = "#ff2e9a",
+		cursor_fg = "#13141c",
+		cursor_border = "#ff2e9a",
+		selection_bg = "#292e42",
+		selection_fg = "#a9b1d6",
+		scrollbar_thumb = "#292e42",
+		split = "#292e42",
 		ansi = {
-			"#1b1b22",
-			"#e28ca9",
-			"#a3be8c",
-			"#e5c07b",
-			"#81a1c1",
-			"#b48ead",
-			"#88c0d0",
-			"#d8dee9",
+			"#0e0e14",
+			"#f7768e",
+			"#9ece6a",
+			"#e0af68",
+			"#7aa2f7",
+			"#ad8ee6",
+			"#449dab",
+			"#a9b1d6",
 		},
 		brights = {
-			"#4c566a",
-			"#f2a4bc",
-			"#b1d196",
-			"#eed49f",
-			"#9bb7d3",
-			"#c69ac3",
-			"#9ad5df",
-			"#eceff4",
+			"#565f89",
+			"#ff7a93",
+			"#b9f27c",
+			"#ff9e64",
+			"#7da6ff",
+			"#bb9af7",
+			"#0db9d7",
+			"#c0caf5",
 		},
 		tab_bar = {
-			background = "#14141a",
-			active_tab = { bg_color = "#2e3440", fg_color = "#e28ca9" },
-			inactive_tab = { bg_color = "#202028", fg_color = "#8f93a5" },
-			inactive_tab_hover = { bg_color = "#2e3440", fg_color = "#d8dee9" },
-			new_tab = { bg_color = "#14141a", fg_color = "#81a1c1" },
-			new_tab_hover = { bg_color = "#2e3440", fg_color = "#e28ca9" },
+			background = "#13141c",
+			active_tab = { bg_color = "#292e42", fg_color = "#ff2e9a" },
+			inactive_tab = { bg_color = "#24283b", fg_color = "#414868" },
+			inactive_tab_hover = { bg_color = "#292e42", fg_color = "#a9b1d6" },
+			new_tab = { bg_color = "#13141c", fg_color = "#7aa2f7" },
+			new_tab_hover = { bg_color = "#292e42", fg_color = "#ff2e9a" },
 		},
 	},
 }
 
 config.color_scheme = "xeoTheme"
 
-config.font = wezterm.font("Hack Nerd Font")
-config.font_size = 15.0
--- Transparency is independent from the palette. Tuned by eye: 0.95 was
--- invisible, 0.85 subtle, 0.75 still read as too solid. 0.65 is clearly
--- see-through; text keeps its contrast against #08052b, but how readable it
--- actually is now depends on what's behind the window.
--- Kept in step with Windows Terminal's profiles.defaults.opacity (65).
-config.window_background_opacity = 0.65
+-- Installed Nerd Font; it supplies both coding glyphs and prompt icons.
+config.font = wezterm.font("JetBrainsMono Nerd Font")
+config.font_size = 12.0
+-- A mostly opaque background keeps terminal text readable while Hyprland blur
+-- softens the wallpaper behind it. Kept in step with Windows Terminal (85).
+config.window_background_opacity = 0.85
 config.macos_window_background_blur = 50
 if wezterm.target_triple:find("linux") then
 	config.enable_wayland = true

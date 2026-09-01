@@ -7,7 +7,7 @@
     "profile GUIDs and paths and is rewritten by Terminal's own settings UI).",
     "Deployed by scripts/apply-to-system.sh to",
     "%LOCALAPPDATA%\\Microsoft\\Windows Terminal\\Fragments\\xeoTheme\\.",
-    "Same xeoTheme palette as wezterm, Starship, OpenCode and herdr's",
+    "Tokyo Night system palette, with the fuchsia active-window border reused",
     "[theme.custom] overrides.",
     "A scheme of the same name inside settings.json takes precedence over a",
     "fragment, so an inline xeoTheme entry there would shadow this one and",
@@ -21,28 +21,28 @@
     {
       "name": "xeoTheme",
 
-      "background": "#08052B",
-      "foreground": "#D8DEE9",
-      "cursorColor": "#E28CA9",
-      "selectionBackground": "#2E3440",
+      "background": "#1A1B26",
+      "foreground": "#A9B1D6",
+      "cursorColor": "#FF2E9A",
+      "selectionBackground": "#292E42",
 
-      "black": "#1B1B22",
-      "red": "#E28CA9",
-      "green": "#A3BE8C",
-      "yellow": "#E5C07B",
-      "blue": "#81A1C1",
-      "purple": "#B48EAD",
-      "cyan": "#88C0D0",
-      "white": "#D8DEE9",
+      "black": "#0E0E14",
+      "red": "#F7768E",
+      "green": "#9ECE6A",
+      "yellow": "#E0AF68",
+      "blue": "#7AA2F7",
+      "purple": "#AD8EE6",
+      "cyan": "#449DAB",
+      "white": "#A9B1D6",
 
-      "brightBlack": "#4C566A",
-      "brightRed": "#F2A4BC",
-      "brightGreen": "#B1D196",
-      "brightYellow": "#EED49F",
-      "brightBlue": "#9BB7D3",
-      "brightPurple": "#C69AC3",
-      "brightCyan": "#9AD5DF",
-      "brightWhite": "#ECEFF4"
+      "brightBlack": "#565F89",
+      "brightRed": "#FF7A93",
+      "brightGreen": "#B9F27C",
+      "brightYellow": "#FF9E64",
+      "brightBlue": "#7DA6FF",
+      "brightPurple": "#BB9AF7",
+      "brightCyan": "#0DB9D7",
+      "brightWhite": "#C0CAF5"
     }
   ]
 }

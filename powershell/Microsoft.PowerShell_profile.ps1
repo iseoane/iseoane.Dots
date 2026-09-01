@@ -69,23 +69,24 @@ Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
 Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
 
 # System syntax colours, aligned with zsh and the Windows Terminal palette.
-# xeoTheme semantic roles. PSReadLine 2.4.5 accepts #RRGGBB directly and emits truecolor.
+# Tokyo Night semantic roles; fuchsia matches the active window border.
+# PSReadLine 2.4.5 accepts #RRGGBB directly and emits truecolor.
 Set-PSReadLineOption -Colors @{
-    Command          = '#E28CA9'
-    String           = '#A3BE8C'
-    Parameter        = '#81A1C1'
-    Keyword          = '#B48EAD'
-    Operator         = '#88C0D0'
-    Error            = '#F2A4BC'
-    Comment          = '#8F93A5'
-    InlinePrediction = '#8F93A5'
-    Default          = '#D8DEE9'
-    Selection        = '#2E3440'
-    Variable         = '#C69AC3'
-    Type             = '#9BB7D3'
-    Number           = '#EED49F'
-    Member           = '#9AD5DF'
-    Emphasis         = '#E28CA9'
+    Command          = '#FF2E9A'
+    String           = '#9ECE6A'
+    Parameter        = '#7AA2F7'
+    Keyword          = '#AD8EE6'
+    Operator         = '#449DAB'
+    Error            = '#F7768E'
+    Comment          = '#414868'
+    InlinePrediction = '#414868'
+    Default          = '#A9B1D6'
+    Selection        = '#292E42'
+    Variable         = '#BB9AF7'
+    Type             = '#7DA6FF'
+    Number           = '#FF9E64'
+    Member           = '#0DB9D7'
+    Emphasis         = '#FF2E9A'
 }
 
 # DockerCompletion (docker tab-completion) is deliberately NOT imported: it cost
