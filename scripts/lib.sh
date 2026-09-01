@@ -8,25 +8,18 @@ WIN_HOME="/mnt/c/Users/iseoane"
 backup_if_needed() {
   # $1 = path to a file/dir that is about to be overwritten
   local target="$1"
-  if [ -e "$target" ] && [ ! -L "$target" ]; then
-    local stamp
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    local stamp backup counter
     stamp="$(date +%Y%m%d-%H%M%S)"
-    mv "$target" "${target}.bak-${stamp}"
-    echo "  backup -> ${target}.bak-${stamp}"
+    backup="${target}.bak-${stamp}"
+    counter=1
+    while [ -e "$backup" ] || [ -L "$backup" ]; do
+      backup="${target}.bak-${stamp}-${counter}"
+      counter=$((counter + 1))
+    done
+    mv "$target" "$backup"
+    echo "  backup -> $backup"
   fi
-}
-
-symlink() {
-  # $1 = source (repo file), $2 = destination (live path)
-  local src="$1" dst="$2"
-  mkdir -p "$(dirname "$dst")"
-  if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-    echo "  ok (already linked): $dst"
-    return
-  fi
-  backup_if_needed "$dst"
-  ln -s "$src" "$dst"
-  echo "  linked: $dst -> $src"
 }
 
 copy() {
@@ -35,6 +28,12 @@ copy() {
   mkdir -p "$(dirname "$dst")"
   cp -r "$src" "$dst"
   echo "  copied: $src -> $dst"
+}
+
+copy_with_backup() {
+  # $1 = source, $2 = destination
+  backup_if_needed "$2"
+  copy "$1" "$2"
 }
 
 has_windows_mount() {

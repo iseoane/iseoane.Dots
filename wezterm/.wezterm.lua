@@ -65,7 +65,7 @@ end
 -- than a blur. Ignored on Linux/macOS, and on Windows 10 (needs Win11).
 config.win32_system_backdrop = "Acrylic"
 config.hide_tab_bar_if_only_one_tab = true
-config.window_decorations = "RESIZE"
+config.window_decorations = "TITLE|RESIZE"
 config.window_padding = {
 	left = 12,
 	right = 12,
@@ -111,10 +111,5 @@ config.mouse_bindings = {
 		action = wezterm.action.PasteFrom("Clipboard"),
 	},
 }
-
-wezterm.on("gui-startup", function(cmd)
-	local tab, pane, window = wezterm.mux.spawn_window(cmd or {})
-	window:gui_window():maximize()
-end)
 
 return config

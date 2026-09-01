@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Pull the live config back into the repo: machine -> repo.
 # Run this before committing, after you've edited the copy-based configs
-# (claude, herdr, wezterm, nvim) directly on the live system.
+# (zsh, claude, herdr, wezterm, nvim) directly on the live system.
 #
-# zsh is symlinked, so it never drifts from the repo and isn't handled here.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+echo "== zsh =="
+cp "$HOME/.zshrc" "$REPO_ROOT/zsh/.zshrc"
+cp "$HOME/.zprofile" "$REPO_ROOT/zsh/.zprofile"
+echo "  synced zsh/.zshrc and zsh/.zprofile"
 
 echo "== ssh config (never keys) =="
 cp "$HOME/.ssh/config" "$REPO_ROOT/ssh/config"

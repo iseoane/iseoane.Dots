@@ -25,7 +25,9 @@ before committing:
 git status   # review, then commit
 ```
 
-Both scripts back up any live file they overwrite (`<file>.bak-<timestamp>`).
+The apply script backs up any live file or symlink it replaces
+(`<file>.bak-<timestamp>`). Reverse sync writes live edits back to the repo for
+review.
 
 ### Windows prerequisites (one-time, manual)
 
@@ -42,7 +44,7 @@ Both scripts back up any live file they overwrite (`<file>.bak-<timestamp>`).
 ## What goes where
 
 ```
-zsh/.zshrc, .zprofile      -> symlinked to $HOME (Debian/WSL)
+zsh/.zshrc, .zprofile      -> copied to $HOME (Debian/WSL)
 starship/starship.toml     -> copied to ~/.config/starship.toml on BOTH
                                Debian/WSL and Windows
 opencode/                   -> safe config/resources copied to ~/.config/opencode/
@@ -99,10 +101,11 @@ codex/hooks.json           -> merged (via codex/merge-hooks.py) into
 `claude/settings.local.json` is intentionally NOT versioned — it holds
 machine-local overrides per Claude Code convention.
 
-## Strategy: symlink vs copy
+## Strategy: portable copies
 
-- **zsh**: pure config, no secrets or runtime state. **Symlinked** — edit
-  anywhere, both sides stay in sync automatically.
+- **zsh**: pure config, no secrets or runtime state. **Copied** so the live
+  shell does not depend on where this repository is checked out. Run
+  `sync-from-system.sh` after live edits to copy them back into the repo.
 - **ssh/config**: host aliases only (`Host`, `HostName`, `User`,
   `IdentityFile` pointers). **Copied**, never symlinked. Private keys
   (`*.pem`, `*.ppk`, `id_*`) and `known_hosts` are gitignored and must never

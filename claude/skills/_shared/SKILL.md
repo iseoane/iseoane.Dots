@@ -1,5 +1,5 @@
 ---
-name: _shared
+name: shared
 description: "Shared SDD references for installed skills. Not invokable."
 disable-model-invocation: true
 user-invocable: false

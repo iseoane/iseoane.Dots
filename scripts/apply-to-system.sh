@@ -2,7 +2,7 @@
 # Apply the repo's config to the live system: repo -> machine.
 # Run this on a fresh machine (or after pulling changes) to install the dotfiles.
 #
-# zsh: symlinked (live edits stay in sync with the repo automatically).
+# zsh: copied (portable across repository checkout locations).
 # claude/herdr/wezterm/nvim: copied (they mix config with runtime state / differ per OS,
 # see README for why symlinks aren't used there).
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -39,7 +39,11 @@ apply_windows_node_config() {
   fi
 }
 
-echo "== zsh (plugins + symlink) =="
+has_windows_command() {
+  cmd.exe /d /c "where $1 >nul 2>nul" >/dev/null 2>&1
+}
+
+echo "== zsh (plugins + copy) =="
 mkdir -p "$HOME/.zsh"
 install_zsh_plugin \
   "https://github.com/zsh-users/zsh-autosuggestions.git" \
@@ -49,8 +53,8 @@ install_zsh_plugin \
   "https://github.com/zsh-users/zsh-completions.git" \
   "8cd3bd78e8b1f17271cfdd8269074e5557d8d7b8" \
   "$HOME/.zsh/zsh-completions"
-symlink "$REPO_ROOT/zsh/.zshrc" "$HOME/.zshrc"
-symlink "$REPO_ROOT/zsh/.zprofile" "$HOME/.zprofile"
+copy_with_backup "$REPO_ROOT/zsh/.zshrc" "$HOME/.zshrc"
+copy_with_backup "$REPO_ROOT/zsh/.zprofile" "$HOME/.zprofile"
 
 echo "== starship (install binary + copy config) =="
 # .zshrc unconditionally does `eval "$(starship init zsh)"`, so the binary
@@ -222,10 +226,14 @@ if has_windows_mount; then
     "opencode windows config"
 
   echo "== pi (native windows config + npm dependencies) =="
-  apply_windows_node_config \
-    "$REPO_ROOT/pi/manage.mjs" \
-    "$WIN_HOME/.pi/agent" \
-    "pi windows config"
+  if has_windows_command pi; then
+    apply_windows_node_config \
+      "$REPO_ROOT/pi/manage.mjs" \
+      "$WIN_HOME/.pi/agent" \
+      "pi windows config"
+  else
+    echo "  pi windows config skipped: Pi is not installed on Windows"
+  fi
 
   if [ "$RESTORE_CLAUDE" = "y" ]; then
     echo "== claude (copy, windows side via /mnt/c) =="

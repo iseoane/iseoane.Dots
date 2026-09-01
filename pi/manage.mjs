@@ -223,9 +223,16 @@ async function apply(targetDir, skipNpm) {
     await copyFile(join(repoDir, "npm", file), destination);
   }
   if (!skipNpm) {
-    const npm = process.platform === "win32" ? "npm.cmd" : "npm";
-    const result = spawnSync(npm, ["ci"], { cwd: npmDir, stdio: "inherit" });
-    if (result.status !== 0) throw new Error(`npm ci failed with exit code ${result.status ?? "unknown"}`);
+    const result = process.platform === "win32"
+      ? spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "npm.cmd ci"], {
+          cwd: npmDir,
+          stdio: "inherit",
+        })
+      : spawnSync("npm", ["ci"], { cwd: npmDir, stdio: "inherit" });
+    if (result.status !== 0) {
+      const reason = result.error ? ` (${result.error.code ?? result.error.message})` : "";
+      throw new Error(`npm ci failed with exit code ${result.status ?? "unknown"}${reason}`);
+    }
   }
   console.log(`pi config applied to ${targetDir}`);
 }
