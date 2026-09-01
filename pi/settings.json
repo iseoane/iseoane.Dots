@@ -1,0 +1,19 @@
+{
+  "theme": "xeoTheme",
+  "hideThinkingBlock": true,
+  "quietStartup": true,
+  "steeringMode": "all",
+  "followUpMode": "all",
+  "collapseChangelog": true,
+  "packages": [
+    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.6",
+    "npm:gentle-engram",
+    "npm:pi-mcp-adapter",
+    "npm:pi-subagents-j0k3r",
+    "npm:pi-web-access",
+    "npm:@juicesharp/rpiv-ask-user-question",
+    "npm:@juicesharp/rpiv-todo"
+  ],
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.5"
+}

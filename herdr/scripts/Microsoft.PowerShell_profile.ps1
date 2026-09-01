@@ -12,3 +12,4 @@ function lswt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Inv
 function crwt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-HerdrWtCr @rest }
 function openwt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-HerdrWtOpen @rest }
 function rmwt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-HerdrWtRm @rest }
+function oc { param([Parameter(ValueFromRemainingArguments = $true)]$rest) & opencode --auto @rest }

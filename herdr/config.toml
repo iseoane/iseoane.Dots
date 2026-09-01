@@ -1,5 +1,5 @@
 onboarding = false
-# herdr configuration managed by Gentleman.Dots.
+# herdr configuration using the shared xeoTheme palette.
 # This file is copied into ~/.config/herdr/config.toml during installation.
 # Shared across Debian/WSL and Windows.
 
@@ -7,12 +7,8 @@ onboarding = false
 channel = "stable"
 
 [theme]
-# Use a built-in dark theme with neutral foregrounds so Herdr does not inherit
-# Ghostty bright-black selected rows or Kanagawa's warm/yellow label text.
-# The Gentleman preset below only overrides individual tokens on top of this
-# base, so the base still supplies every colour it does not name. one-dark is
-# what Gentleman.Dots pairs the preset with; catppuccin was the previous choice
-# here.
+# Use one-dark only as the complete-token fallback. The custom block supplies
+# the system palette used by wezterm, zsh, Starship and Windows Terminal.
 #
 # Built-in themes (herdr 0.8.2): catppuccin, catppuccin-latte, terminal,
 # tokyo-night, tokyo-night-day, dracula, nord, gruvbox, gruvbox-light,
@@ -23,39 +19,28 @@ name = "one-dark"
 
 auto_switch = false
 
-# ── Colour preset: GENTLEMAN (ACTIVE) ────────────────────────────
-# The palette gentle-ai injects into its agents, matching wezterm's
-# "Gentleman Blur" scheme and the gentleman-blur Starship palette.
-# Values copied verbatim from Gentleman.Dots' own herdr/config.toml; the
-# canonical palette lives in Gentleman-Programming/gentleman-kanagawa-blur
-# (lua/gentleman_kanagawa_blur/variant.lua, palette `blur`).
-#
-# `accent` and `blue` are #6FA0AF, the muted cyan upstream picked here rather
-# than the brighter #7FB4CA that ghostty exports. Upstream's own comment on
-# that line reads: "Match Pi's Gentle theme, with a muted cyan for Herdr
-# chrome." This is no longer a herdr-only value: since Gentleman.Dots' fish
-# config defines no blue at all, #6FA0AF is now the blue across wezterm,
-# Windows Terminal, Starship and nvim's :terminal too.
-#
-# Other tokens [theme.custom] accepts, if the chrome ever needs more grounding:
-# base, text, subtext0, surface0/1/2, overlay0/1, teal, peach, lavender,
-# sidebar_bg, active_row_bg, selection_bg. Left unset on purpose: upstream
-# pairs exactly these six with the one-dark base, and the result is not
-# verifiable from here without looking at a running Herdr.
+# ── System colour preset (active) ─────────────────────────────────
 [theme.custom]
-panel_bg = "#06080f"
-accent = "#6FA0AF"
-green = "#B7CC85"
-blue = "#6FA0AF"
-red = "#CB7C94"
-yellow = "#DEBA87"
-
-# CATPPUCCIN MOCHA preset (to switch back: set name = "catppuccin" above,
-# comment out the [theme.custom] block and the [ui] accent line below).
-# herdr chrome then follows the built-in catppuccin (mocha) theme, no overrides.
+panel_bg = "#08052B"
+text = "#D8DEE9"
+subtext0 = "#8F93A5"
+surface0 = "#14141A"
+surface1 = "#202028"
+overlay0 = "#4C566A"
+overlay1 = "#8F93A5"
+accent = "#E28CA9"
+red = "#E28CA9"
+green = "#A3BE8C"
+yellow = "#E5C07B"
+blue = "#81A1C1"
+teal = "#88C0D0"
+peach = "#EED49F"
+sidebar_bg = "#14141A"
+active_row_bg = "#202028"
+selection_bg = "#2E3440"
 
 [ui]
-accent = "#6FA0AF"  # GENTLEMAN preset only
+accent = "#E28CA9"
 prompt_new_tab_name = false
 agent_panel_sort = "priority"
 show_agent_labels_on_pane_borders = true

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://aka.ms/terminal-profiles-schema",
+
+  "//": [
+    "Windows Terminal fragment: adds the shared xeoTheme colour scheme without",
+    "touching settings.json, which stays user-owned (it holds machine-specific",
+    "profile GUIDs and paths and is rewritten by Terminal's own settings UI).",
+    "Deployed by scripts/apply-to-system.sh to",
+    "%LOCALAPPDATA%\\Microsoft\\Windows Terminal\\Fragments\\xeoTheme\\.",
+    "Same xeoTheme palette as wezterm, Starship, OpenCode and herdr's",
+    "[theme.custom] overrides.",
+    "A scheme of the same name inside settings.json takes precedence over a",
+    "fragment, so an inline xeoTheme entry there would shadow this one and",
+    "silently freeze its colours. Observed behaviour: a running Windows",
+    "Terminal drops the redundant inline copy on its next save once this",
+    "fragment provides the same name, leaving the fragment as the only source.",
+    "If an inline copy ever reappears, delete it rather than editing both."
+  ],
+
+  "schemes": [
+    {
+      "name": "xeoTheme",
+
+      "background": "#08052B",
+      "foreground": "#D8DEE9",
+      "cursorColor": "#E28CA9",
+      "selectionBackground": "#2E3440",
+
+      "black": "#1B1B22",
+      "red": "#E28CA9",
+      "green": "#A3BE8C",
+      "yellow": "#E5C07B",
+      "blue": "#81A1C1",
+      "purple": "#B48EAD",
+      "cyan": "#88C0D0",
+      "white": "#D8DEE9",
+
+      "brightBlack": "#4C566A",
+      "brightRed": "#F2A4BC",
+      "brightGreen": "#B1D196",
+      "brightYellow": "#EED49F",
+      "brightBlue": "#9BB7D3",
+      "brightPurple": "#C69AC3",
+      "brightCyan": "#9AD5DF",
+      "brightWhite": "#ECEFF4"
+    }
+  ]
+}

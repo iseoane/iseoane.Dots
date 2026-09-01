@@ -23,3 +23,23 @@ nvim/.env
 # from the timestamped backup on deploy (see apply-to-system.sh); never version
 # them. They were committed by accident once and untracked afterwards.
 nvim/spell/
+
+# Pi: only the curated declarative files under pi/ belong in Git. These names
+# are credentials, generated state, histories, native dependencies or caches.
+pi/auth.json
+pi/mcp-cache.json
+pi/models-store.json
+pi/sessions/
+pi/pi-pretty/
+pi/calm
+pi/npm/node_modules/
+
+# OpenCode auth, databases, sessions/history and generated dependencies live
+# outside the managed allowlist and must never enter this repository.
+opencode/auth.json
+opencode/opencode.db*
+opencode/log/
+opencode/tool-output/
+opencode/prompt-history.jsonl
+opencode/model.json
+opencode/node_modules/

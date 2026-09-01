@@ -68,41 +68,24 @@ Set-PSReadLineKeyHandler -Key Ctrl+Spacebar -Function AcceptSuggestion
 Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
 Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
 
-# Gentleman syntax colours. Without this PSReadLine runs on its defaults, whose
-# Command colour is plain Yellow -- so every command you type shouted in
-# #FFE066. In this palette yellow belongs to *strings*, not commands.
-#
-# The role assignment is ported from Gentleman.Dots' own fish config
-# (GentlemanFish/fish/config.fish), the only place upstream maps the palette by
-# role rather than by ANSI slot. Do NOT use the colorscheme's
-# extras/zsh-syntax-highlighting file as a reference: like its alacritty, kitty
-# and windows-terminal extras, it was inherited unchanged from oldworld.nvim
-# and carries a different palette entirely.
-#
-# Roles fish has no equivalent for fall back to variant.lua's syntax colours,
-# except where that would collide with a role already in use here:
-#   Variable  variant.lua says #C4746E, a muted red only dE 17 from the error
-#             colour -- too close for something this common in a shell, so it
-#             takes the lavender instead.
-#   Type      variant.lua says #8FB8DD, only dE 7 from Parameter, i.e. visually
-#             the same colour. Uses the bright blue instead.
-# PSReadLine 2.4.5 accepts #RRGGBB directly and emits truecolor.
+# System syntax colours, aligned with zsh and the Windows Terminal palette.
+# xeoTheme semantic roles. PSReadLine 2.4.5 accepts #RRGGBB directly and emits truecolor.
 Set-PSReadLineOption -Colors @{
-    Command          = '#7AA89F'  # fish: command   -- cyan, NOT yellow
-    String           = '#FFE066'  # fish: quote     -- this is where yellow goes
-    Parameter        = '#A3B5D6'  # fish: param
-    Keyword          = '#FF8DD7'  # fish: keyword
-    Operator         = '#B7CC85'  # fish: operator
-    Error            = '#CB7C94'  # fish: error
-    Comment          = '#8394A3'  # fish: comment
-    InlinePrediction = '#8394A3'  # fish: autosuggestion
-    Default          = '#F3F6F9'  # fish: normal
-    Selection        = '#263356'  # fish: selection background
-    Variable         = '#B99BF2'  # see note above
-    Type             = '#A3D4D5'  # see note above
-    Number           = '#A4DAA7'  # variant.lua: number
-    Member           = '#A1B5C7'  # variant.lua: property
-    Emphasis         = '#E0C15A'  # the gold accent
+    Command          = '#E28CA9'
+    String           = '#A3BE8C'
+    Parameter        = '#81A1C1'
+    Keyword          = '#B48EAD'
+    Operator         = '#88C0D0'
+    Error            = '#F2A4BC'
+    Comment          = '#8F93A5'
+    InlinePrediction = '#8F93A5'
+    Default          = '#D8DEE9'
+    Selection        = '#2E3440'
+    Variable         = '#C69AC3'
+    Type             = '#9BB7D3'
+    Number           = '#EED49F'
+    Member           = '#9AD5DF'
+    Emphasis         = '#E28CA9'
 }
 
 # DockerCompletion (docker tab-completion) is deliberately NOT imported: it cost
@@ -171,6 +154,7 @@ function lswt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Inv
 function crwt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-HerdrWtCr @rest }
 function openwt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-HerdrWtOpen @rest }
 function rmwt { param([Parameter(ValueFromRemainingArguments = $true)]$rest) Invoke-HerdrWtRm @rest }
+function oc { param([Parameter(ValueFromRemainingArguments = $true)]$rest) & opencode --auto @rest }
 
 # -----------------------------------------------------------------
 # 5. worktree management (herdr-independent, plain git worktree)

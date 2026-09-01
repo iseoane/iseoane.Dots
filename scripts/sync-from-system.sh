@@ -33,6 +33,16 @@ cp "$HOME/.config/herdr/config.toml" "$REPO_ROOT/herdr/config.toml"
 cp "$HOME/.config/herdr/scripts/herdr-wt" "$REPO_ROOT/herdr/scripts/herdr-wt"
 echo "  synced herdr/config.toml and herdr/scripts/herdr-wt"
 
+echo "== wezterm (linux/wsl canonical copy) =="
+cp "$HOME/.config/wezterm/wezterm.lua" "$REPO_ROOT/wezterm/.wezterm.lua"
+echo "  synced wezterm/.wezterm.lua"
+
+echo "== opencode (safe declarative config) =="
+node "$REPO_ROOT/opencode/manage.mjs" sync
+
+echo "== pi (config + extensions + npm manifests) =="
+node "$REPO_ROOT/pi/manage.mjs" sync
+
 echo "== worktree management (debian/wsl side, herdr-independent) =="
 cp "$HOME/.config/worktree-management/worktree-mgmt.sh" "$REPO_ROOT/scripts/worktree-management/worktree-mgmt.sh"
 echo "  synced scripts/worktree-management/worktree-mgmt.sh"
@@ -62,18 +72,14 @@ echo "== codex (debian/wsl side) =="
 echo "  skip: codex/hooks.json is edited directly, not synced back from the live file"
 
 if has_windows_mount; then
-  echo "== wezterm (windows side via /mnt/c) =="
-  cp "$WIN_HOME/.wezterm.lua" "$REPO_ROOT/wezterm/.wezterm.lua"
-  echo "  synced wezterm/.wezterm.lua"
-
   echo "== windows terminal colour schemes (fragment, windows side via /mnt/c) =="
   # Only the fragment, never settings.json: that file is user-owned (machine
   # profile GUIDs, paths) and Terminal's settings UI rewrites it. Guarded
   # because a machine that has never run apply-to-system.sh won't have it yet.
-  WT_FRAGMENT="$WIN_HOME/AppData/Local/Microsoft/Windows Terminal/Fragments/Gentleman.Dots/gentleman.json"
+  WT_FRAGMENT="$WIN_HOME/AppData/Local/Microsoft/Windows Terminal/Fragments/xeoTheme/xeoTheme.json"
   if [ -f "$WT_FRAGMENT" ]; then
-    cp "$WT_FRAGMENT" "$REPO_ROOT/windows-terminal/gentleman.json"
-    echo "  synced windows-terminal/gentleman.json"
+    cp "$WT_FRAGMENT" "$REPO_ROOT/windows-terminal/xeoTheme.json"
+    echo "  synced windows-terminal/xeoTheme.json"
   else
     echo "  skip: fragment not deployed on this machine yet"
   fi
@@ -128,7 +134,7 @@ if has_windows_mount; then
     echo "  skip: windows .engram-sync/sync.ps1 not found"
   fi
 else
-  echo "== wezterm skipped: no /mnt/c mount (not running under WSL) =="
+  echo "== native windows sync targets skipped: no /mnt/c mount (not running under WSL) =="
 fi
 
 echo "Done. Review with 'git status' / 'git diff' before committing."

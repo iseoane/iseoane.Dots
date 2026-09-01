@@ -15,7 +15,40 @@ RESTORE_CLAUDE="n"
 read -rp "Restore claude config from repo (CLAUDE.md, settings, agents/commands/skills, statuslines)? [y/N] " ans || true
 case "$ans" in y|Y|yes|YES) RESTORE_CLAUDE="y" ;; esac
 
-echo "== zsh (symlink) =="
+install_zsh_plugin() {
+  local repository="$1" revision="$2" target="$3"
+  if [ ! -d "$target/.git" ]; then
+    if [ -e "$target" ]; then
+      echo "error: refusing to replace non-Git zsh plugin path: $target" >&2
+      return 1
+    fi
+    git clone --no-checkout "$repository" "$target"
+  fi
+  if ! git -C "$target" cat-file -e "$revision^{commit}" 2>/dev/null; then
+    git -C "$target" fetch --depth 1 origin "$revision"
+  fi
+  git -C "$target" checkout --quiet --detach "$revision"
+}
+
+apply_windows_node_config() {
+  local manager="$1" target="$2" label="$3"
+  if command -v node.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
+    node.exe "$(wslpath -w "$manager")" apply --target "$(wslpath -w "$target")"
+  else
+    echo "  $label skipped: native Windows node.exe is required"
+  fi
+}
+
+echo "== zsh (plugins + symlink) =="
+mkdir -p "$HOME/.zsh"
+install_zsh_plugin \
+  "https://github.com/zsh-users/zsh-autosuggestions.git" \
+  "85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5" \
+  "$HOME/.zsh/zsh-autosuggestions"
+install_zsh_plugin \
+  "https://github.com/zsh-users/zsh-completions.git" \
+  "8cd3bd78e8b1f17271cfdd8269074e5557d8d7b8" \
+  "$HOME/.zsh/zsh-completions"
 symlink "$REPO_ROOT/zsh/.zshrc" "$HOME/.zshrc"
 symlink "$REPO_ROOT/zsh/.zprofile" "$HOME/.zprofile"
 
@@ -30,6 +63,16 @@ fi
 # 30ms default so AV/encryption file-read latency doesn't trip scan warnings.
 backup_if_needed "$HOME/.config/starship.toml"
 copy "$REPO_ROOT/starship/starship.toml" "$HOME/.config/starship.toml"
+
+echo "== wezterm (copy, linux/wsl side) =="
+backup_if_needed "$HOME/.config/wezterm/wezterm.lua"
+copy "$REPO_ROOT/wezterm/.wezterm.lua" "$HOME/.config/wezterm/wezterm.lua"
+
+echo "== opencode (safe declarative config) =="
+node "$REPO_ROOT/opencode/manage.mjs" apply
+
+echo "== pi (config + extensions + native npm dependencies) =="
+node "$REPO_ROOT/pi/manage.mjs" apply
 
 echo "== ssh config (copy, never keys) =="
 backup_if_needed "$HOME/.ssh/config"
@@ -99,7 +142,7 @@ backup_if_needed "$CODEX_HOOKS_TARGET"
 python3 "$REPO_ROOT/codex/merge-hooks.py" "$REPO_ROOT/codex/hooks.json" "$CODEX_HOOKS_TARGET"
 
 if has_windows_mount; then
-  echo "== wezterm (copy, windows side via /mnt/c) =="
+  echo "== wezterm (copy, native windows side via /mnt/c) =="
   backup_if_needed "$WIN_HOME/.wezterm.lua"
   copy "$REPO_ROOT/wezterm/.wezterm.lua" "$WIN_HOME/.wezterm.lua"
 
@@ -108,10 +151,10 @@ if has_windows_mount; then
   # holds machine-specific profile GUIDs and is rewritten by Terminal's own
   # settings UI). Picking the scheme is still a settings.json / UI choice.
   echo "== windows terminal colour schemes (fragment, windows side via /mnt/c) =="
-  WT_FRAGMENTS="$WIN_HOME/AppData/Local/Microsoft/Windows Terminal/Fragments/Gentleman.Dots"
+  WT_FRAGMENTS="$WIN_HOME/AppData/Local/Microsoft/Windows Terminal/Fragments/xeoTheme"
   mkdir -p "$WT_FRAGMENTS"
-  backup_if_needed "$WT_FRAGMENTS/gentleman.json"
-  copy "$REPO_ROOT/windows-terminal/gentleman.json" "$WT_FRAGMENTS/gentleman.json"
+  backup_if_needed "$WT_FRAGMENTS/xeoTheme.json"
+  copy "$REPO_ROOT/windows-terminal/xeoTheme.json" "$WT_FRAGMENTS/xeoTheme.json"
 
   echo "== herdr (copy, windows side via /mnt/c) =="
   backup_if_needed "$WIN_HOME/AppData/Roaming/herdr/config.toml"
@@ -172,6 +215,18 @@ if has_windows_mount; then
   backup_if_needed "$WIN_HOME/.config/starship.toml"
   copy "$REPO_ROOT/starship/starship.toml" "$WIN_HOME/.config/starship.toml"
 
+  echo "== opencode (native windows config) =="
+  apply_windows_node_config \
+    "$REPO_ROOT/opencode/manage.mjs" \
+    "$WIN_HOME/.config/opencode" \
+    "opencode windows config"
+
+  echo "== pi (native windows config + npm dependencies) =="
+  apply_windows_node_config \
+    "$REPO_ROOT/pi/manage.mjs" \
+    "$WIN_HOME/.pi/agent" \
+    "pi windows config"
+
   if [ "$RESTORE_CLAUDE" = "y" ]; then
     echo "== claude (copy, windows side via /mnt/c) =="
     # Windows keeps its OWN settings.json (pwsh statuslines, C:/ hook paths,
@@ -209,7 +264,7 @@ if has_windows_mount; then
   mkdir -p "$WIN_HOME/.engram-sync"
   copy "$REPO_ROOT/engram/sync.ps1" "$WIN_HOME/.engram-sync/sync.ps1"
 else
-  echo "== wezterm/herdr(win) skipped: no /mnt/c mount (not running under WSL) =="
+  echo "== native windows targets skipped: no /mnt/c mount (not running under WSL) =="
 fi
 
 echo "Done."

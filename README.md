@@ -1,7 +1,7 @@
 # iseoane.Dots
 
-Personal dotfiles: zsh, PowerShell 7, Starship, wezterm, herdr, Neovim, and
-Claude Code config — one repo shared between a Debian/WSL machine and its
+Personal dotfiles: zsh, PowerShell 7, Starship, wezterm, herdr, Neovim, Pi,
+OpenCode and Claude Code config — one repo shared between a Debian/WSL machine and its
 Windows host, with the same terminal experience (Starship prompt, history
 suggestions, worktree helpers) on both sides.
 
@@ -35,19 +35,26 @@ Both scripts back up any live file they overwrite (`<file>.bak-<timestamp>`).
 | Starship | `winget install Starship.Starship` | Same prompt binary as Debian. Shared config in `starship/starship.toml` (deployed to `~/.config/`) keeps prompts identical and raises `scan_timeout` (see the Starship section). |
 | Hack Nerd Font | already required by wezterm | Starship's symbols need it; `wezterm/.wezterm.lua` sets it as the terminal font. |
 | Terminal-Icons, DockerCompletion | `Install-Module Terminal-Icons, DockerCompletion -Scope CurrentUser` | PowerShell Gallery modules imported by the PS7 profile (icons in `ls` output, docker completions). |
+| Node.js, Git | Native Windows installs on `PATH` | Required to restore Pi/OpenCode dependencies and to keep native modules separate from WSL. |
+| Pi, OpenCode | Install their native Windows CLIs, then authenticate interactively | Config is restored, but credentials and sessions are intentionally machine-local. |
+| Engram, CodeGraph | Native Windows binaries on `PATH` | Used by Pi's MCP and CodeGraph extension; WSL binaries cannot serve native Windows Pi. |
 
 ## What goes where
 
 ```
 zsh/.zshrc, .zprofile      -> symlinked to $HOME (Debian/WSL)
 starship/starship.toml     -> copied to ~/.config/starship.toml on BOTH
-                              Debian/WSL and Windows
+                               Debian/WSL and Windows
+opencode/                   -> safe config/resources copied to ~/.config/opencode/
+                               on Linux/WSL and native Windows
+pi/                         -> settings, models, MCP, local extensions, themes and
+                               npm manifests restored to ~/.pi/agent/ on both systems
 ssh/config                 -> copied to ~/.ssh/config AND Windows .ssh/config
                               (never keys, never known_hosts)
 wezterm/.wezterm.lua       -> copied to Windows $HOME (via /mnt/c)
-windows-terminal/gentleman.json
-                           -> copied to Windows AppData/Local/Microsoft/
-                              Windows Terminal/Fragments/Gentleman.Dots/
+windows-terminal/xeoTheme.json
+                            -> copied to Windows AppData/Local/Microsoft/
+                              Windows Terminal/Fragments/xeoTheme/
                               (adds the colour schemes; settings.json itself
                               stays user-owned and is never written)
 herdr/config.toml          -> copied to ~/.config/herdr/config.toml AND
@@ -112,41 +119,38 @@ machine-local overrides per Claude Code convention.
 - **herdr/**, **wezterm/**, **powershell/**, **nvim/**, **starship/**:
   **copied** — they live at different paths per OS (or only exist on one
   side), so a symlink can't cover both. Details below.
+- **pi/** and **opencode/**: copied through strict allowlist managers. Config,
+  themes and local resources are versioned; credentials, sessions, histories,
+  databases, logs, caches and `node_modules` are never copied. Pi dependencies
+  are rebuilt with the target system's native npm, so Linux binaries never land
+  in the Windows installation.
 
-### colour theme: Gentleman, across wezterm, Starship and herdr
+### colour theme: xeoTheme
 
-wezterm, Starship and herdr all render the **Gentleman** palette -- the same
-one `gentle-ai` injects into its agents, and the one `nvim` already uses via
-the `gentleman-kanagawa-blur` colorscheme (`nvim/lua/plugins/colorscheme.lua`).
-
-The canonical source is `Gentleman-Programming/gentleman-kanagawa-blur`:
-`lua/gentleman_kanagawa_blur/variant.lua` for the semantic roles, and
-`extras/ghostty/gentleman-kanagawa-blur` for the 16 ANSI slots plus
-background/foreground/cursor/selection. (Two traps: that repo's
-`extras/alacritty/` and `extras/kitty/` files were inherited from the upstream
-`oldworld.nvim` and do *not* carry the Gentleman hexes; and `gentle-ai`'s
-`internal/tui/styles/styles.go` is Rose Pine -- that's its installer chrome,
-not the theme. The theme gentle-ai owns is the one it injects in
-`internal/components/theme/inject.go`.)
+Zsh, PowerShell, wezterm, Windows Terminal, Starship, herdr, OpenCode and Pi
+share the `xeoTheme` dark palette. Its core colours are background `#08052B`, foreground
+`#D8DEE9`, accent `#E28CA9`, selection `#2E3440`, blue `#81A1C1`, green
+`#A3BE8C`, yellow `#E5C07B`, magenta `#B48EAD` and cyan `#88C0D0`.
 
 Each tool expresses it differently, because each supports a different amount:
 
 | Tool | Mechanism | Selectable? |
 |------|-----------|-------------|
-| wezterm | `config.color_schemes` in `.wezterm.lua`, with `config.color_scheme` picking one | Yes -- `"Gentleman Blur"` (active), `"Gentleman Sakura"`, or any wezterm built-in such as the previous `"rose-pine-moon"` |
-| Windows Terminal | `windows-terminal/gentleman.json`, a **fragment** deployed to `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\Gentleman.Dots\` | Yes -- `Gentleman` (active) or `Gentleman Sakura`, pickable in the settings UI |
-| Starship | `[palettes.*]` in `starship.toml`, selected by `palette = ...` | Yes -- `gentleman-blur` (active) or `gentleman-sakura`; comment `palette` out to fall back to the terminal's ANSI colours |
-| Neovim | the `gentleman-kanagawa-blur` colorscheme (`nvim/lua/plugins/colorscheme.lua`) | Yes -- it's the LazyVim `colorscheme` opt |
-| herdr | `[theme.custom]` token overrides on top of a built-in base | **No** -- herdr 0.8.2 has a fixed list of built-in theme names and no user-defined ones, so the preset is a commented block you toggle by hand |
+| wezterm | `config.color_schemes` in `.wezterm.lua`, selected by `config.color_scheme` | `xeoTheme` is active |
+| Windows Terminal | `windows-terminal/xeoTheme.json`, deployed to `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\xeoTheme\` | Select `xeoTheme` for the desired profiles in Terminal settings |
+| Starship | `[palettes.xeoTheme]` in `starship.toml` | `xeoTheme` is active; comment `palette` out to use terminal ANSI colours |
+| OpenCode | `opencode/themes/xeoTheme.json` with `opencode/tui.json` | `xeoTheme` is active globally after deployment |
+| Pi | `pi/themes/xeoTheme.json`; managed settings are merged with Pi-owned state | `xeoTheme` is active globally after deployment |
+| zsh | `ZSH_HIGHLIGHT_STYLES` in `zsh/.zshrc` | Semantic truecolor roles |
+| PowerShell | `Set-PSReadLineOption -Colors` in the PowerShell 7 profile | Same semantic roles as zsh |
+| herdr | `[theme.custom]` overrides on top of `one-dark` | `xeoTheme` tokens are always active; HerdR cannot name custom themes |
 
 Two details worth knowing before editing these:
 
-- The schemes are defined **inline in `.wezterm.lua`**, not as a
+- The scheme is defined **inline in `.wezterm.lua`**, not as a
   `colors/*.toml` file, because only `.wezterm.lua` itself is copied to the
   Windows `$HOME` (see the deployment map above) -- a sidecar file wouldn't
-  ship. For the same reason the old top-level `config.colors` block is gone:
-  it overrode the scheme's `selection_bg`/`selection_fg` entry-by-entry, so
-  rose-pine's selection would have survived into the new theme.
+  ship.
 - The Starship palette deliberately reuses Starship's **standard colour
   names** (`green`, `cyan`, `bright-black`, ...). A palette entry shadows the
   built-in of the same name, so the default prompt -- which styles its modules
@@ -154,63 +158,74 @@ Two details worth knowing before editing these:
   rewrites at all. Verified on starship 1.26.0; if a future version drops that
   shadowing, every module needs an explicit `style =` instead.
 
-**Shell syntax highlighting is themed by role, from fish.** PSReadLine and
-zsh-syntax-highlighting both ship defaults that ignore the palette -- most
-visibly PSReadLine's `Command`, which is plain `Yellow`, so every typed command
-came out in `#FFE066`. In this palette yellow belongs to **strings**; commands
-are cyan. Both shells now carry the role assignment from Gentleman.Dots'
-`GentlemanFish/fish/config.fish`, in `powershell/Microsoft.PowerShell_profile.ps1`
-(`Set-PSReadLineOption -Colors`) and `zsh/.zshrc` (`ZSH_HIGHLIGHT_STYLES`, set
-after the plugin is sourced so it wins). Two roles fish has no equivalent for
-depart from `variant.lua` on purpose, both to avoid colliding with a role
-already in use: `Variable` (its `#C4746E` sits only dE 17 from the error
-colour) and `Type` (its `#8FB8DD` is dE 7 from `Parameter`, i.e.
-indistinguishable). This changes no palette value -- only which role uses which.
+**Shell syntax highlighting is themed by semantic role.** PSReadLine and
+zsh-syntax-highlighting otherwise use unrelated defaults. Commands use the pink
+accent, strings green, parameters blue, keywords purple, operators cyan and
+comments muted gray. The maps live in `powershell/Microsoft.PowerShell_profile.ps1`
+and `zsh/.zshrc`.
+
+Zsh's autosuggestions and extra completions are pinned and bootstrapped into
+`~/.zsh/` by `apply-to-system.sh`; syntax highlighting can use either a local
+clone or the distro package under `/usr/share`. Both Zsh and PowerShell expose
+`oc` as the permission-bypass launcher for OpenCode. It expands to the current
+CLI's documented `opencode --auto` flag; the similarly named
+`--dangerously-skip-permissions` spelling is not a documented OpenCode option.
+Zsh also binds Home, End, Delete, PgUp and PgDn through `terminfo`, with common
+CSI/SS3 fallbacks, so navigation works consistently in WezTerm, Windows
+Terminal, Linux consoles and SSH sessions instead of leaving a literal `~`.
+
+### Pi and OpenCode: safe portable config
+
+The root scripts delegate to `pi/manage.mjs` and `opencode/manage.mjs`. Their
+standalone commands are useful when working on only one tool:
+
+```bash
+node pi/manage.mjs sync
+node pi/manage.mjs apply
+node pi/manage.mjs check
+node opencode/manage.mjs sync
+node opencode/manage.mjs apply
+node opencode/manage.mjs check
+```
+
+Pi versions its curated settings, model overrides, MCP definition, all local
+extensions, themes, and npm manifest/lockfile. `apply` merges managed settings
+instead of deleting Pi-owned keys, then runs native `npm ci`. It never copies
+`auth.json`, sessions, MCP/model caches, Calm preference, FFF history or
+`node_modules`.
+
+OpenCode versions `opencode.jsonc`, `tui.json`, themes and any future local
+agents, commands, skills, plugins or tools found in its documented config
+directories. It never copies OpenCode auth, SQLite data, prompt history, model
+state, logs, tool output, cache or installer files. Authenticate Pi and OpenCode
+separately on every machine after restoring the repo.
+
+Both tools include a portable `engram-sync` integration in their managed local
+resources. Pi pulls on `session_start`, pushes on `agent_settled`, and starts a
+detached, time-limited final push on `session_shutdown`. OpenCode pulls when the
+plugin loads and pushes on `session.idle`. The integrations invoke
+`~/.engram-sync/sync.sh` on Linux/WSL or `sync.ps1` through `pwsh.exe` on
+Windows; the root deployment scripts install those files before either tool is
+used.
+
+When run from WSL with `/mnt/c` available, `apply-to-system.sh` invokes native
+`node.exe` for the Windows copies. This is intentional: npm dependencies with
+native modules must be installed by the OS that will execute them. Reverse sync
+uses the Linux/WSL side as the canonical source, matching Claude and Neovim.
 
 **Windows Terminal is deliberately only half-managed.** The repo ships the
-schemes as a fragment, which is the supported way to add colours without
+scheme as a fragment, which is the supported way to add colours without
 touching `settings.json` -- that file holds machine-specific profile GUIDs and
 paths and is rewritten by Terminal's own settings UI, so versioning it whole
 would be fragile. Which scheme is *active* therefore stays a `settings.json` /
 UI choice and is not reapplied by `apply-to-system.sh` -- and so does
 transparency, since `opacity` and `useAcrylic` live on `profiles.defaults` and
-a fragment cannot set those. Both are currently `opacity: 85` + `useAcrylic`,
-matching wezterm's `window_background_opacity = 0.85`; keep the two in step if
+a fragment cannot set those. Both are currently `opacity: 65` + `useAcrylic`,
+matching wezterm's `window_background_opacity = 0.65`; keep the two in step if
 you retune either. Note also that a scheme
 of the same name inside `settings.json` shadows the fragment's; the inline
-`Gentleman` entry there is byte-identical, so it makes no difference.
-
-**The reference for the per-role values is Gentleman.Dots' fish config**
-(`GentlemanFish/fish/config.fish`, byte-identical to the colorscheme's own
-`extras/fish/blur.fish`). It is the one place upstream writes the palette out
-by semantic role rather than by ANSI slot, so it settles what "the Gentleman
-red" actually is. Every role it defines -- foreground, selection, comment, red,
-yellow, green, cyan and its `pink` (the magenta slot) -- is used verbatim here.
-
-It defines no **blue**, though, so that one value comes from upstream's herdr
-config: `#6FA0AF`, a muted cyan, rather than the brighter `#7FB4CA` its ghostty
-export uses. `#7FB4CA` survives only on bright cyan (slot 14). Note that herdr
-and fish do *not* otherwise agree: herdr's `yellow` is `#DEBA87`, which is
-fish's **orange**, because herdr's fixed six-token chrome has no orange slot to
-put it in. fish wins that one -- yellow stays `#FFE066`.
-
-**One upstream inconsistency is also corrected, on ANSI slots 5 and 13.**
-`variant.lua` defines `purple` (`#A3B5D6`) and `magenta` (`#FF8DD7`) as separate
-colours, and upstream is not self-consistent about which one lands in the ANSI
-magenta slots: its ghostty export uses magenta, its Neovim `:terminal` mapping
-uses purple. fish maps its `pink` (`#FF8DD7`) to magenta, so **magenta** wins
-here and all five surfaces render one identical 16-colour palette:
-
-- `nvim/lua/plugins/colorscheme.lua` re-sets `terminal_color_5`/`13` in an
-  `init()` autocmd after the colorscheme loads, so a `:terminal` buffer inside
-  Neovim matches the shell outside it.
-- `starship.toml`'s `purple` entry is `#FF8DD7`, not `#A3B5D6` -- Starship's
-  `purple` *is* the ANSI 5 slot. The muted one is still available in the palette
-  as `soft-purple` if you'd rather have lavender on `git_branch`.
-
-herdr's `accent` and `blue` are both `#6FA0AF`, copied verbatim from
-Gentleman.Dots' own `herdr/config.toml`; as explained above, that value is now
-the blue everywhere else too.
+`xeoTheme` entry there should be deleted if it drifts, because an inline
+scheme shadows the fragment.
 
 ### herdr: one config file, two OSes
 
@@ -368,9 +383,13 @@ versions, keeping both sides on identical plugins. Sync flows from the Debian
 side only: `sync-from-system.sh` pulls `~/.config/nvim` into the repo, and
 the Windows copy is always deployed from the repo.
 
-- **wezterm** currently only has a config on the Windows side
-  (`/mnt/c/Users/iseoane/.wezterm.lua`); it's copied there via the WSL
-  `/mnt/c` bridge.
+- **wezterm** uses the same portable config on Linux (`~/.config/wezterm/wezterm.lua`)
+  and Windows (`%USERPROFILE%\.wezterm.lua`). Windows-only WSL domains and launch
+  menu entries are guarded by `wezterm.target_triple`. Its 65% translucent
+  background requests compositor blur through the Wayland background-effect
+  protocol on Linux, uses Acrylic on Windows 11, and native background blur on
+  macOS. Linux blur still requires protocol support from the active Wayland
+  compositor.
 
 ### engram: cross-machine memory sync hooks
 
@@ -378,10 +397,9 @@ the Windows copy is always deployed from the repo.
 private `engram-data` repo** (not this one) — it holds the append-only
 Engram memory chunks (`.engram/chunks/`, `.engram/manifest.json`) that get
 pushed/pulled between machines. Only the two hook scripts that drive that
-clone are versioned here, as `engram/sync.sh` (Debian/WSL, invoked by
-`claude/settings.json`'s SessionStart/Stop hooks **and** `codex/hooks.json`'s
-SessionStart/Stop hooks — both call the same script) and `engram/sync.ps1`
-(Windows, invoked by `claude/settings.windows.json`). `apply-to-system.sh`
+clone are versioned here, as `engram/sync.sh` (Debian/WSL, invoked by Claude,
+Codex, Pi and OpenCode) and `engram/sync.ps1` (Windows, invoked by Claude, Pi
+and OpenCode). `apply-to-system.sh`
 copies each script into the existing `~/.engram-sync` clone without touching
 its `.git/` or `.engram/` data; `sync-from-system.sh` pulls them back the
 same way, skipping the copy on a machine where `~/.engram-sync` hasn't been

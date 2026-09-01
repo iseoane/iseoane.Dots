@@ -16,8 +16,8 @@ setopt AUTO_PUSHD             # cd pushes onto the dir stack
 setopt PUSHD_IGNORE_DUPS
 
 # ── Completion ──────────────────────────────────────────────────────
-# zsh-completions adds extra completion definitions; register it before compinit
-fpath=(~/.zsh/zsh-completions/src $fpath)
+# zsh-completions adds extra completion definitions; register it before compinit.
+[[ -d "$HOME/.zsh/zsh-completions/src" ]] && fpath=("$HOME/.zsh/zsh-completions/src" $fpath)
 
 autoload -Uz compinit
 # Docker Desktop's WSL integration mounts /usr/share/zsh/vendor-completions/_docker
@@ -32,13 +32,32 @@ setopt COMPLETE_IN_WORD                                   # complete from the cu
 setopt ALWAYS_TO_END                                     # move cursor to end after completion
 
 # ── Autosuggestions (fish-like inline suggestions from history) ─────
-source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
-bindkey '^ ' autosuggest-accept                          # Ctrl+Space to accept a suggestion
+if [[ -r "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
+  source "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh"
+elif [[ -r /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+  source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+fi
+(( $+widgets[autosuggest-accept] )) && bindkey '^ ' autosuggest-accept # Ctrl+Space to accept
 
 # ── Keybindings ─────────────────────────────────────────────────────
 bindkey -e                                               # emacs-style keybindings
 bindkey '^[[A' history-beginning-search-backward         # Up: search history by prefix
 bindkey '^[[B' history-beginning-search-forward          # Down: same, forward
+
+# Bind navigation keys from terminfo, then cover the common CSI/SS3 variants
+# emitted by WezTerm, Windows Terminal, Linux consoles and SSH clients.
+zmodload zsh/terminfo 2>/dev/null
+[[ -n ${terminfo[khome]-} ]] && bindkey "${terminfo[khome]}" beginning-of-line
+[[ -n ${terminfo[kend]-}  ]] && bindkey "${terminfo[kend]}" end-of-line
+[[ -n ${terminfo[kdch1]-} ]] && bindkey "${terminfo[kdch1]}" delete-char
+[[ -n ${terminfo[kpp]-}   ]] && bindkey "${terminfo[kpp]}" history-beginning-search-backward
+[[ -n ${terminfo[knp]-}   ]] && bindkey "${terminfo[knp]}" history-beginning-search-forward
+for sequence in $'\e[H' $'\e[1~' $'\eOH'; bindkey "$sequence" beginning-of-line
+for sequence in $'\e[F' $'\e[4~' $'\eOF'; bindkey "$sequence" end-of-line
+bindkey $'\e[3~' delete-char
+bindkey $'\e[5~' history-beginning-search-backward
+bindkey $'\e[6~' history-beginning-search-forward
+unset sequence
 
 # ── Prompt ──────────────────────────────────────────────────────────
 # Now managed by Starship (see init below). The manual vcs_info prompt is
@@ -63,6 +82,7 @@ dcdev() {
 alias ll='ls -lah --color=auto'
 alias la='ls -A --color=auto'
 alias grep='grep --color=auto'
+alias oc='opencode --auto'
 
 # herdr worktree helpers (migrated from .bashrc)
 alias lswt='~/.config/herdr/scripts/herdr-wt ls'
@@ -74,46 +94,44 @@ alias rmwt='~/.config/herdr/scripts/herdr-wt rm'
 [ -f ~/.config/worktree-management/worktree-mgmt.sh ] && source ~/.config/worktree-management/worktree-mgmt.sh
 
 # ── Syntax highlighting ─────────────────────────────────────────────
-# Must be sourced LAST, after all other zle widgets are defined
-source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+# Must be sourced LAST, after all other zle widgets are defined.
+if [[ -r "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
+  source "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+elif [[ -r /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+  source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
 
-# Gentleman syntax colours. Set AFTER the source above, so they win over the
-# plugin's defaults. Same role assignment as the PowerShell profile's
-# Set-PSReadLineOption block -- both are ported from Gentleman.Dots' own fish
-# config (GentlemanFish/fish/config.fish), the only place upstream maps the
-# palette by role rather than by ANSI slot. In this palette yellow is for
-# *strings*, not commands; commands are cyan.
-#
-# Deliberately NOT the colorscheme's extras/zsh-syntax-highlighting file: like
-# its alacritty, kitty and windows-terminal extras, that one was inherited
-# unchanged from oldworld.nvim and carries a different palette (#90b99f etc).
+# System syntax colours. Set after the plugin so these semantic roles win over
+# its defaults. Keep this map aligned with PowerShell's PSReadLine colours.
 typeset -gA ZSH_HIGHLIGHT_STYLES
-ZSH_HIGHLIGHT_STYLES[command]='fg=#7AA89F'
-ZSH_HIGHLIGHT_STYLES[builtin]='fg=#7AA89F'
-ZSH_HIGHLIGHT_STYLES[function]='fg=#7AA89F'
-ZSH_HIGHLIGHT_STYLES[alias]='fg=#7AA89F'
-ZSH_HIGHLIGHT_STYLES[suffix-alias]='fg=#7AA89F'
-ZSH_HIGHLIGHT_STYLES[hashed-command]='fg=#7AA89F'
-ZSH_HIGHLIGHT_STYLES[precommand]='fg=#7AA89F,italic'
-ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=#CB7C94'
-ZSH_HIGHLIGHT_STYLES[reserved-word]='fg=#FF8DD7'
-ZSH_HIGHLIGHT_STYLES[single-quoted-argument]='fg=#FFE066'
-ZSH_HIGHLIGHT_STYLES[double-quoted-argument]='fg=#FFE066'
-ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]='fg=#FFE066'
-ZSH_HIGHLIGHT_STYLES[rc-quote]='fg=#FFE066'
-ZSH_HIGHLIGHT_STYLES[single-hyphen-option]='fg=#A3B5D6'
-ZSH_HIGHLIGHT_STYLES[double-hyphen-option]='fg=#A3B5D6'
-ZSH_HIGHLIGHT_STYLES[path]='fg=#F3F6F9'
-ZSH_HIGHLIGHT_STYLES[globbing]='fg=#B7CC85'
-ZSH_HIGHLIGHT_STYLES[commandseparator]='fg=#B7CC85'
-ZSH_HIGHLIGHT_STYLES[redirection]='fg=#F3F6F9'
-ZSH_HIGHLIGHT_STYLES[comment]='fg=#8394A3'
-ZSH_HIGHLIGHT_STYLES[dollar-double-quoted-argument]='fg=#B99BF2'
-ZSH_HIGHLIGHT_STYLES[back-double-quoted-argument]='fg=#FF8DD7'
-ZSH_HIGHLIGHT_STYLES[assign]='fg=#B99BF2'
-ZSH_HIGHLIGHT_STYLES[named-fd]='fg=#A4DAA7'
-ZSH_HIGHLIGHT_STYLES[numeric-fd]='fg=#A4DAA7'
-ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#8394A3'
+# xeoTheme semantic roles.
+ZSH_HIGHLIGHT_STYLES[default]='fg=#D8DEE9'
+ZSH_HIGHLIGHT_STYLES[command]='fg=#E28CA9'
+ZSH_HIGHLIGHT_STYLES[builtin]='fg=#E28CA9'
+ZSH_HIGHLIGHT_STYLES[function]='fg=#E28CA9'
+ZSH_HIGHLIGHT_STYLES[alias]='fg=#E28CA9'
+ZSH_HIGHLIGHT_STYLES[suffix-alias]='fg=#E28CA9'
+ZSH_HIGHLIGHT_STYLES[hashed-command]='fg=#E28CA9'
+ZSH_HIGHLIGHT_STYLES[precommand]='fg=#E28CA9,italic'
+ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=#F2A4BC'
+ZSH_HIGHLIGHT_STYLES[reserved-word]='fg=#B48EAD'
+ZSH_HIGHLIGHT_STYLES[single-quoted-argument]='fg=#A3BE8C'
+ZSH_HIGHLIGHT_STYLES[double-quoted-argument]='fg=#A3BE8C'
+ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]='fg=#A3BE8C'
+ZSH_HIGHLIGHT_STYLES[rc-quote]='fg=#A3BE8C'
+ZSH_HIGHLIGHT_STYLES[single-hyphen-option]='fg=#81A1C1'
+ZSH_HIGHLIGHT_STYLES[double-hyphen-option]='fg=#81A1C1'
+ZSH_HIGHLIGHT_STYLES[path]='fg=#D8DEE9'
+ZSH_HIGHLIGHT_STYLES[globbing]='fg=#88C0D0'
+ZSH_HIGHLIGHT_STYLES[commandseparator]='fg=#88C0D0'
+ZSH_HIGHLIGHT_STYLES[redirection]='fg=#D8DEE9'
+ZSH_HIGHLIGHT_STYLES[comment]='fg=#8F93A5'
+ZSH_HIGHLIGHT_STYLES[dollar-double-quoted-argument]='fg=#C69AC3'
+ZSH_HIGHLIGHT_STYLES[back-double-quoted-argument]='fg=#B48EAD'
+ZSH_HIGHLIGHT_STYLES[assign]='fg=#C69AC3'
+ZSH_HIGHLIGHT_STYLES[named-fd]='fg=#B1D196'
+ZSH_HIGHLIGHT_STYLES[numeric-fd]='fg=#B1D196'
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#8F93A5'
 
 # ── Auto-launch herdr on interactive shells (migrated from .bashrc) ─
 # Guards:
