@@ -1,7 +1,7 @@
 # iseoane.Dots
 
 Personal dotfiles: zsh, PowerShell 7, Starship, wezterm, herdr, Neovim, Pi,
-OpenCode and Claude Code config — one repo shared between Omarchy/Linux, Debian/WSL
+Oh My Pi (OMP), OpenCode and Claude Code config — one repo shared between Omarchy/Linux, Debian/WSL
 and Windows hosts, with the same terminal experience (Starship prompt, history
 suggestions, worktree helpers) on both sides.
 
@@ -51,6 +51,9 @@ opencode/                   -> safe config/resources copied to ~/.config/opencod
                                on Linux/WSL and native Windows
 pi/                         -> settings, models, MCP, local extensions, themes and
                                npm manifests restored to ~/.pi/agent/ on both systems
+omp/                        -> safe config, personality, models, local resources and
+                               plugin manifests restored to ~/.omp/agent and ~/.omp/plugins
+                               on Linux/WSL
 ssh/config                 -> copied to ~/.ssh/config AND Windows .ssh/config
                               (never keys, never known_hosts)
 wezterm/.wezterm.lua       -> copied to ~/.config/wezterm/wezterm.lua on Linux
@@ -130,7 +133,7 @@ machine-local overrides per Claude Code convention.
   **copied with timestamped backups** — they live at different paths per OS
   (or only exist on one side), so a symlink can't cover both. The small Omarchy
   blur fragment and Edge flag are merged instead, preserving unrelated live config.
-- **pi/** and **opencode/**: copied through strict allowlist managers. Config,
+- **pi/**, **omp/** and **opencode/**: copied through strict allowlist managers. Config,
   themes and local resources are versioned; credentials, sessions, histories,
   databases, logs, caches and `node_modules` are never copied. Pi dependencies
   are rebuilt with the target system's native npm, so Linux binaries never land
@@ -187,9 +190,10 @@ Zsh also binds Home, End, Delete, PgUp and PgDn through `terminfo`, with common
 CSI/SS3 fallbacks, so navigation works consistently in WezTerm, Windows
 Terminal, Linux consoles and SSH sessions instead of leaving a literal `~`.
 
-### Pi and OpenCode: safe portable config
+### Pi, OMP and OpenCode: safe portable config
 
-The root scripts delegate to `pi/manage.mjs` and `opencode/manage.mjs`. Their
+The root scripts delegate to `pi/manage.mjs`, `omp/manage.mjs`, and
+`opencode/manage.mjs`. Their
 standalone commands are useful when working on only one tool:
 
 ```bash
@@ -199,6 +203,9 @@ node pi/manage.mjs check
 node opencode/manage.mjs sync
 node opencode/manage.mjs apply
 node opencode/manage.mjs check
+node omp/manage.mjs sync
+node omp/manage.mjs apply
+node omp/manage.mjs check
 ```
 
 Pi versions its curated settings, model overrides, MCP definition, all local
@@ -210,10 +217,22 @@ instead of deleting Pi-owned keys, then runs native `npm ci`. It never copies
 OpenCode versions `opencode.jsonc`, `tui.json`, themes and any future local
 agents, commands, skills, plugins or tools found in its documented config
 directories. It never copies OpenCode auth, SQLite data, prompt history, model
-state, logs, tool output, cache or installer files. Authenticate Pi and OpenCode
+state, logs, tool output, cache or installer files. Authenticate Pi, OMP, and OpenCode
 separately on every machine after restoring the repo.
 
-Both tools include a portable `engram-sync` integration in their managed local
+OMP versions `config.yml`, `models.yml`, `PERSONALITY.md`, curated local
+agents/commands/extensions/skills/themes, and the plugin package manifest plus
+lockfile when present. Apply creates timestamped backups before replacement.
+Plugin dependencies are restored with `bun install --frozen-lockfile`; an empty
+manifest performs no installation. OMP is optional in the root apply flow, and
+reverse sync is skipped when `~/.omp/agent` is absent. The manager rejects
+literal credential-like values and never copies auth, SQLite databases, blobs,
+caches, sessions, terminal state, histories, logs, or `node_modules`.
+`herdr-omp-agent-state.ts` is also excluded because Herdr generates and owns it.
+The active `extendedContext: false` setting is required by `check` so reverse
+sync cannot silently drop or enable it.
+
+Pi and OpenCode include a portable `engram-sync` integration in their managed local
 resources. Pi pulls on `session_start`, pushes on `agent_settled`, and starts a
 detached, time-limited final push on `session_shutdown`. OpenCode pulls when the
 plugin loads and pushes on `session.idle`. The integrations invoke

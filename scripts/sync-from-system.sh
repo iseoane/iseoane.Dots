@@ -69,6 +69,13 @@ node "$REPO_ROOT/opencode/manage.mjs" sync
 echo "== pi (config + extensions + npm manifests) =="
 node "$REPO_ROOT/pi/manage.mjs" sync
 
+echo "== omp (safe declarative config + plugins) =="
+if [ -d "$HOME/.omp/agent" ]; then
+  node "$REPO_ROOT/omp/manage.mjs" sync
+else
+  echo "  omp skipped: $HOME/.omp/agent not found"
+fi
+
 echo "== worktree management (debian/wsl side, herdr-independent) =="
 cp "$HOME/.config/worktree-management/worktree-mgmt.sh" "$REPO_ROOT/scripts/worktree-management/worktree-mgmt.sh"
 echo "  synced scripts/worktree-management/worktree-mgmt.sh"

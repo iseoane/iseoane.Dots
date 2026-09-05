@@ -109,6 +109,13 @@ node "$REPO_ROOT/opencode/manage.mjs" apply
 echo "== pi (config + extensions + native npm dependencies) =="
 node "$REPO_ROOT/pi/manage.mjs" apply
 
+echo "== omp (safe declarative config + plugins) =="
+if command -v omp >/dev/null 2>&1; then
+  node "$REPO_ROOT/omp/manage.mjs" apply
+else
+  echo "  omp skipped: Oh My Pi is not installed"
+fi
+
 echo "== ssh config (copy, never keys) =="
 backup_if_needed "$HOME/.ssh/config"
 copy "$REPO_ROOT/ssh/config" "$HOME/.ssh/config"

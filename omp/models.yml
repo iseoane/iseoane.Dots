@@ -1,0 +1,9 @@
+providers:
+  opencode-go:
+    modelOverrides:
+      grok-4.6:
+        contextWindow: 200000
+  opencode-zen:
+    modelOverrides:
+      grok-4.6:
+        contextWindow: 200000
