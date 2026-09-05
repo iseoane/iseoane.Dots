@@ -144,8 +144,6 @@ ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#414868'
 #     exec herdr
 # fi
 
-# Disable no-mistakes telemetry (umami) for CLI processes
-export NO_MISTAKES_TELEMETRY=0
 export PATH="/usr/local/go/bin:$HOME/go/bin:$PATH"
 
 # >>> Codex installer >>>
