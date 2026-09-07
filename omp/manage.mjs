@@ -5,7 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoDir = dirname(fileURLToPath(import.meta.url));
-const managedFiles = ["config.yml", "models.yml", "PERSONALITY.md"];
+const managedFiles = ["config.yml", "models.yml", "PERSONALITY.md", "mcp.json"];
 const managedDirectories = ["agents", "commands", "extensions", "skills", "themes"];
 const pluginFiles = ["package.json", "bun.lock", "bun.lockb"];
 const ignoredExtensionNames = new Set(["herdr-omp-agent-state.ts"]);

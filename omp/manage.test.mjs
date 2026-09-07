@@ -24,20 +24,24 @@ try {
   await writeFile(join(agent, "config.yml"), "extendedContext: true\n");
   await writeFile(join(agent, "models.yml"), "providers: {}\n");
   await writeFile(join(agent, "PERSONALITY.md"), "old\n");
+  await writeFile(join(agent, "mcp.json"), '{"mcpServers":{"old":{"command":"old"}}}\n');
   await writeFile(join(agent, "extensions", "old.ts"), "export {};\n");
   await writeFile(join(plugins, "package.json"), '{"name":"old"}\n');
 
   run(["apply", "--target", agent, "--plugins-target", plugins, "--skip-install"]);
   assert.match(await readFile(join(agent, "config.yml"), "utf8"), /^extendedContext: false$/m);
   assert.equal(JSON.parse(await readFile(join(plugins, "package.json"), "utf8")).name, "omp-plugins");
+  assert.equal(JSON.parse(await readFile(join(agent, "mcp.json"), "utf8")).mcpServers.engram.command, "engram");
   const backupResult = spawnSync("bash", ["-lc", `compgen -G '${agent}/config.yml.bak-*'`], { encoding: "utf8" });
   assert.equal(backupResult.status, 0, "apply did not create a config backup");
 
   await writeFile(join(agent, "config.yml"), "theme:\n  dark: titanium\nextendedContext: false\n");
+  await writeFile(join(agent, "mcp.json"), '{"mcpServers":{"engram":{"command":"custom-engram"}}}\n');
   await writeFile(join(agent, "extensions", "custom.ts"), "export default {};\n");
   await writeFile(join(agent, "extensions", "herdr-omp-agent-state.ts"), "machine-managed\n");
   run(["sync", "--target", agent, "--plugins-target", plugins]);
   assert.equal(await readFile(join(ompDir, "extensions", "custom.ts"), "utf8"), "export default {};\n");
+  assert.equal(JSON.parse(await readFile(join(ompDir, "mcp.json"), "utf8")).mcpServers.engram.command, "custom-engram");
   await assert.rejects(readFile(join(ompDir, "extensions", "herdr-omp-agent-state.ts")));
   run(["apply", "--target", agent, "--plugins-target", plugins, "--skip-install"]);
   assert.equal(await readFile(join(agent, "extensions", "herdr-omp-agent-state.ts"), "utf8"), "machine-managed\n");
