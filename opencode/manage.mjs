@@ -115,7 +115,8 @@ function assertNoLiteralSecrets(value, trail = []) {
     if (
       typeof item === "string" &&
       /(api.?key|access.?token|refresh.?token|secret|password|authorization|cookie)/i.test(key) &&
-      !/\{(?:env|file):[^}]+\}/.test(item)
+      !/\{(?:env|file):[^}]+\}/.test(item) &&
+      !["allow", "ask", "deny"].includes(item)
     ) {
       throw new Error(`literal credential-like value found at ${nextTrail.join(".")}`);
     }
@@ -191,14 +192,20 @@ async function checkRepository() {
 async function sync(targetDir) {
   for (const file of managedFiles) {
     const source = join(targetDir, file);
-    if (!(await exists(source))) continue;
+    const destination = join(repoDir, file);
+    if (!(await exists(source))) {
+      await rm(destination, { force: true });
+      continue;
+    }
     const config = await readConfig(source);
     assertNoLiteralSecrets(config);
-    await copyFileAtomic(source, join(repoDir, file));
+    await copyFileAtomic(source, destination);
   }
   for (const directory of managedDirectories) {
     const source = join(targetDir, directory);
-    if (await exists(source)) await replaceDirectory(source, join(repoDir, directory), "", false);
+    const destination = join(repoDir, directory);
+    if (await exists(source)) await replaceDirectory(source, destination, "", false);
+    else await rm(destination, { recursive: true, force: true });
   }
   await checkRepository();
   console.log(`opencode config synced from ${targetDir}`);
