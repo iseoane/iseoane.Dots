@@ -87,6 +87,14 @@ if wezterm.target_triple:find("windows") then
 	}
 end
 
+config.keys = {
+	{
+		key = "v",
+		mods = "CTRL",
+		action = wezterm.action.PasteFrom("Clipboard"),
+	},
+}
+
 config.mouse_bindings = {
 	-- Selección normal
 	{
@@ -100,6 +108,13 @@ config.mouse_bindings = {
 		event = { Up = { streak = 1, button = "Left" } },
 		mods = "NONE",
 		action = wezterm.action.CompleteSelection("ClipboardAndPrimarySelection"),
+	},
+
+	-- Botón central pega la selección primaria de Linux
+	{
+		event = { Down = { streak = 1, button = "Middle" } },
+		mods = "NONE",
+		action = wezterm.action.PasteFrom("PrimarySelection"),
 	},
 
 	-- Botón derecho pega
