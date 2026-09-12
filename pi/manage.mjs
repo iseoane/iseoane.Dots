@@ -15,6 +15,8 @@ import { fileURLToPath } from "node:url";
 
 const repoDir = dirname(fileURLToPath(import.meta.url));
 const settingsKeys = [
+  "images",
+  "terminal",
   "theme",
   "hideThinkingBlock",
   "quietStartup",
@@ -160,13 +162,14 @@ async function checkRepository() {
   }
   const dependencies = packageJson.dependencies ?? {};
   for (const specifier of settings.packages ?? []) {
+    if (!specifier.startsWith("npm:")) continue;
     const name = packageName(specifier);
     if (!dependencies[name]) throw new Error(`Pi package missing from npm/package.json: ${name}`);
   }
-  for (const required of ["@heyhuynhgiabuu/pi-pretty", "gentle-pi"]) {
+  for (const required of ["gentle-pi"]) {
     if (!dependencies[required]) throw new Error(`local extension dependency missing: ${required}`);
   }
-  for (const file of ["pi-pretty.ts", "quiet-tools.ts", "codegraph-tools.ts", "terminal-status-title.js"]) {
+  for (const file of ["quiet-tools.ts", "codegraph-tools.ts", "terminal-status-title.js"]) {
     if (!(await exists(join(repoDir, "extensions", file)))) throw new Error(`missing Pi extension: ${file}`);
   }
   console.log("pi config: ok");

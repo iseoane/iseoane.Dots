@@ -1,4 +1,10 @@
 {
+  "images": {
+    "blockImages": false
+  },
+  "terminal": {
+    "showImages": false
+  },
   "theme": "xeoTheme",
   "hideThinkingBlock": true,
   "quietStartup": true,
@@ -10,6 +16,7 @@
     "npm:gentle-engram",
     "npm:pi-mcp-adapter",
     "npm:pi-web-access",
+    "git:github.com/algal/pi-openai-server-compaction@c6d593087709e9481223dc6c6c2269b371b5e055",
     "npm:@juicesharp/rpiv-ask-user-question",
     "npm:@juicesharp/rpiv-todo"
   ],

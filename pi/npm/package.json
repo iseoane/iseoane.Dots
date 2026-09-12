@@ -2,7 +2,6 @@
   "name": "pi-extensions",
   "private": true,
   "dependencies": {
-    "@heyhuynhgiabuu/pi-pretty": "^0.6.24",
     "@juicesharp/rpiv-ask-user-question": "^2.9.0",
     "@juicesharp/rpiv-todo": "^2.9.0",
     "@ryan_nookpi/pi-extension-codex-fast-mode": "^0.2.6",
