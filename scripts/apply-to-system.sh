@@ -103,6 +103,12 @@ ensure_config_line \
   "$(cat "$REPO_ROOT/edge/microsoft-edge-stable-flags.conf")" \
   "$HOME/.config/microsoft-edge-stable-flags.conf"
 
+echo "== npm (allow trusted global install scripts, npm >= 11) =="
+if command -v npm >/dev/null 2>&1; then
+  npm config set allow-scripts="gentle-pi,opencode-ai,@google/genai,protobufjs,esbuild" --location=user
+  echo "  set allow-scripts in ~/.npmrc"
+fi
+
 echo "== opencode (safe declarative config) =="
 node "$REPO_ROOT/opencode/manage.mjs" apply
 

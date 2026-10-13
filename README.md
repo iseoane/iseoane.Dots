@@ -17,6 +17,9 @@ Set up a machine (run from WSL, so both filesystems are reachable via `/mnt/c`):
 ./scripts/apply-to-system.sh
 ```
 
+`scripts/update-all.sh` updates the OS, package managers and AI tooling. It is a
+copy of `~/update-all.sh`; edit it here and copy it back (or symlink it).
+
 After editing a copy-based config directly on the live system, pull it back
 before committing:
 
@@ -24,6 +27,9 @@ before committing:
 ./scripts/sync-from-system.sh
 git status   # review, then commit
 ```
+
+`scripts/update-all.sh` updates the OS, package managers and AI tooling. It is a
+copy of `~/update-all.sh`; edit it here and copy it back (or symlink it).
 
 The apply script backs up any live file or symlink it replaces
 (`<file>.bak-<timestamp>`). Reverse sync writes live edits back to the repo for
