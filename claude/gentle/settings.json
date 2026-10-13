@@ -1,0 +1,211 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__codegraph__*",
+      "mcp__engram__mem_capture_passive",
+      "mcp__engram__mem_compare",
+      "mcp__engram__mem_context",
+      "mcp__engram__mem_current_project",
+      "mcp__engram__mem_doctor",
+      "mcp__engram__mem_get_observation",
+      "mcp__engram__mem_judge",
+      "mcp__engram__mem_list_projects",
+      "mcp__engram__mem_pin",
+      "mcp__engram__mem_review",
+      "mcp__engram__mem_save",
+      "mcp__engram__mem_save_prompt",
+      "mcp__engram__mem_search",
+      "mcp__engram__mem_session_end",
+      "mcp__engram__mem_session_start",
+      "mcp__engram__mem_session_summary",
+      "mcp__engram__mem_suggest_topic_key",
+      "mcp__engram__mem_unpin",
+      "mcp__engram__mem_update",
+      "mcp__plugin_engram_engram__mem_capture_passive",
+      "mcp__plugin_engram_engram__mem_compare",
+      "mcp__plugin_engram_engram__mem_context",
+      "mcp__plugin_engram_engram__mem_current_project",
+      "mcp__plugin_engram_engram__mem_doctor",
+      "mcp__plugin_engram_engram__mem_get_observation",
+      "mcp__plugin_engram_engram__mem_judge",
+      "mcp__plugin_engram_engram__mem_list_projects",
+      "mcp__plugin_engram_engram__mem_pin",
+      "mcp__plugin_engram_engram__mem_review",
+      "mcp__plugin_engram_engram__mem_save",
+      "mcp__plugin_engram_engram__mem_save_prompt",
+      "mcp__plugin_engram_engram__mem_search",
+      "mcp__plugin_engram_engram__mem_session_end",
+      "mcp__plugin_engram_engram__mem_session_start",
+      "mcp__plugin_engram_engram__mem_session_summary",
+      "mcp__plugin_engram_engram__mem_suggest_topic_key",
+      "mcp__plugin_engram_engram__mem_unpin",
+      "mcp__plugin_engram_engram__mem_update"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(sudo rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(sudo rm -rf ~)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Read(.ssh/*)",
+      "Edit(.ssh/*)",
+      "Read(.credentials/*)",
+      "Edit(.credentials/*)",
+      "Read(Library/Keychains/*)",
+      "Edit(Library/Keychains/*)",
+      "Read(.aws/credentials)",
+      "Edit(.aws/credentials)",
+      "Read(.config/gh/hosts.yml)",
+      "Edit(.config/gh/hosts.yml)",
+      "Read(**/*.pem)",
+      "Edit(**/*.pem)",
+      "Read(**/*.key)",
+      "Edit(**/*.key)",
+      "Read(**/secrets/*)",
+      "Edit(**/secrets/*)"
+    ],
+    "defaultMode": "auto"
+  },
+  "model": "opus",
+  "effortLevel": "xhigh",
+  "language": "Español",
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh",
+    "padding": 0,
+    "refreshInterval": 30
+  },
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "~/.claude/subagent-statusline.sh"
+  },
+  "editorMode": "normal",
+  "tui": "fullscreen",
+  "worktree": {
+    "baseRef": "head"
+  },
+  "advisorModel": "opus",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "high"
+    },
+    "claude-sonnet-5": {
+      "effortLevel": "medium"
+    },
+    "claude-opus-5-5": {
+      "effortLevel": "low"
+    }
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Bash(pnpm install:*) in $HOME/worktrees/UE.Capability.Analizer",
+      "Bash(docker compose up -d --build celery_worker) in $HOME/worktrees/UE.Capability.Analizer",
+      "Bash(docker compose exec backend pytest:*) in $HOME/worktrees/UE.Capability.Analizer"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(docker compose -f docker-compose.yml -f docker-compose.prod.yml *) in $HOME/worktrees/UE.Capability.Analizer",
+      "Writes to backend/backend/settings/prod.py, infrastructure/mongodb/mongod-prod.conf, infrastructure/nginx/nginx-prod.conf, or docker-compose.prod.yml"
+    ],
+    "environment": [
+      "### Org-wide",
+      "**Organization**: Quental-VASengineeringservice (GitHub org hosting this repo)",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: Private — Quental-VASengineeringservice/UE.Capability.Analizer (confirmed via gh)",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: CI secrets GIST_TOKEN and GITHUB_TOKEN referenced in .github/workflows/apply-secrets.yml (names only, not values); local .env / .env.* files and various *.key, credentials.json, service-account-key.json patterns gitignored — never commit or print these",
+      "**Default / protected branches**: Default branch main; no classic branch protection listed and rulesets not queryable here — treat main as unprotected-by-evidence but do not force-push or rewrite history on it",
+      "**CI/CD deploy targets**: None configured",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine or CI runner with open internet",
+      "**Source control**: The trusted repo (Quental-VASengineeringservice/UE.Capability.Analizer) and its origin remote only — as scoped by Trusted repo and Repository visibility above",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: MongoDB (ueca-mongodb, replica set), Redis (queues/results/token-blacklist), Celery workers — all local/self-hosted infra defined in this repo's docker-compose, not external cloud services",
+      "**Internal package registry**: None configured — frontend dependency xlsx is installed from the public SheetJS CDN (cdn.sheetjs.com) per project convention, not a private registry",
+      "**Sensitive data locations & audiences**: MongoDB terminal/IRF data is multi-tenant (company_id scoped); credentials and secrets in .env/.env.production, backend/backend/settings/prod.py, infrastructure/mongodb/mongod-prod.conf, infrastructure/nginx/nginx-prod.conf, docker-compose.prod.yml, .github/workflows/apply-secrets.yml; share only with audiences cleared at the [named+specifics] bar",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace/host/container carrying prod or production as a whole word/segment — includes docker-compose.prod.yml, backend/backend/settings/prod.py, infrastructure/mongodb/mongod-prod.conf, infrastructure/nginx/nginx-prod.conf, and the deploy.yml / health-check.yml GitHub Actions workflows shown in the README badges",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic (prod/production-named compose files, settings, and configs listed above)",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries prod or production as a whole word/segment (e.g. docker-compose.prod.yml, mongod-prod.conf, nginx-prod.conf)",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (Django/Celery/MongoDB backend, React/Vite frontend, tshark-based deterministic 3GPP PCAP analysis)",
+      "**Trusted repo**: $HOME/worktrees/UE.Capability.Analizer/feature/monitor (working tree) and its origin remote https://github.com/Quental-VASengineeringservice/UE.Capability.Analizer.git — private repo, so confidential material is fine here but secrets are never cleared into it by visibility alone",
+      "**Org-specific CLIs**: None configured — pnpm is the required frontend package manager (never npm/npx) per this repo's convention; codegraph/gentle-ai/engram/sdd tooling referenced in ~/.claude/CLAUDE.md is user-level tooling guidance, not an org-specific CLI credential surface",
+      "routine under $HOME/worktrees/UE.Capability.Analizer/ prefix: pnpm, docker compose, git, gh operations scoped to this working tree and its feature/monitor branch"
+    ]
+  },
+  "askUserQuestionTimeout": "never",
+  "inputNeededNotifEnabled": true,
+  "remoteControlAtStartup": true,
+  "skipAutoPermissionPrompt": true,
+  "skipDangerousModePermissionPrompt": true,
+  "switchModelsOnFlag": true,
+  "enableWorkflows": false,
+  "workflowKeywordTriggerEnabled": false,
+  "feedbackDrafts": "notify",
+  "remote": {
+    "defaultEnvironmentId": "env_01PT94GCZo9Nrfh9DzBnNrkC"
+  },
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.engram-sync/sync.sh push",
+            "timeout": 30,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.engram-sync/sync.sh pull",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '$HOME/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.engram-sync/sync.sh push",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codegraph prompt-hook"
+          }
+        ]
+      }
+    ]
+  }
+}

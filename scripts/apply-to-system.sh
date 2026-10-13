@@ -7,12 +7,12 @@
 # see README for why symlinks aren't used there).
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-# Claude config (CLAUDE.md, settings, agents/commands/skills, statuslines) is
+# Claude config (CLAUDE.md, settings, user rules, allowlisted settings, user hooks, owned output styles, statuslines) is
 # the one section you don't always want restored from the repo -- live edits
 # on a given machine sometimes need to stay live a while before syncing back.
 # Everything else here is safe to always reapply, so only this gets a prompt.
 RESTORE_CLAUDE="n"
-read -rp "Restore claude config from repo (CLAUDE.md, settings, agents/commands/skills, statuslines)? [y/N] " ans || true
+read -rp "Restore claude config from repo (CLAUDE.md, settings, output styles, statuslines; gentle + vanilla)? [y/N] " ans || true
 case "$ans" in y|Y|yes|YES) RESTORE_CLAUDE="y" ;; esac
 
 install_zsh_plugin() {
@@ -122,22 +122,14 @@ copy "$REPO_ROOT/ssh/config" "$HOME/.ssh/config"
 chmod 600 "$HOME/.ssh/config"
 
 if [ "$RESTORE_CLAUDE" = "y" ]; then
-  echo "== claude (copy) =="
-  backup_if_needed "$HOME/.claude/CLAUDE.md"
-  copy "$REPO_ROOT/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-  backup_if_needed "$HOME/.claude/settings.json"
-  copy "$REPO_ROOT/claude/settings.json" "$HOME/.claude/settings.json"
-  backup_if_needed "$HOME/.claude/statusline.sh"
-  copy "$REPO_ROOT/claude/statusline.sh" "$HOME/.claude/statusline.sh"
-  backup_if_needed "$HOME/.claude/subagent-statusline.sh"
-  copy "$REPO_ROOT/claude/subagent-statusline.sh" "$HOME/.claude/subagent-statusline.sh"
-  chmod +x "$HOME/.claude/statusline.sh" "$HOME/.claude/subagent-statusline.sh"
-  backup_if_needed "$HOME/.claude/agents"
-  copy "$REPO_ROOT/claude/agents" "$HOME/.claude/agents"
-  backup_if_needed "$HOME/.claude/commands"
-  copy "$REPO_ROOT/claude/commands" "$HOME/.claude/commands"
-  backup_if_needed "$HOME/.claude/skills"
-  copy "$REPO_ROOT/claude/skills" "$HOME/.claude/skills"
+  echo "== claude (selective merge: gentle-ai ~/.claude) =="
+  node "$REPO_ROOT/claude/manage.mjs" apply --profile gentle
+  if [ -d "$HOME/.claude-vanilla" ]; then
+    echo "== claude (selective merge: vanilla ~/.claude-vanilla) =="
+    node "$REPO_ROOT/claude/manage.mjs" apply --profile vanilla
+  else
+    echo "  claude vanilla skipped: $HOME/.claude-vanilla not found"
+  fi
 else
   echo "== claude: skipped (not requested) =="
 fi
@@ -278,15 +270,6 @@ if has_windows_mount; then
     copy "$REPO_ROOT/claude/statusline.ps1" "$WIN_HOME/.claude/statusline.ps1"
     backup_if_needed "$WIN_HOME/.claude/subagent-statusline.ps1"
     copy "$REPO_ROOT/claude/subagent-statusline.ps1" "$WIN_HOME/.claude/subagent-statusline.ps1"
-    # Windows gets the same agents/commands/skills as Debian; the repo is the
-    # source of truth for both, but sync-from-system.sh only pulls them back
-    # from the Debian side (single canonical origin).
-    backup_if_needed "$WIN_HOME/.claude/agents"
-    copy "$REPO_ROOT/claude/agents" "$WIN_HOME/.claude/agents"
-    backup_if_needed "$WIN_HOME/.claude/commands"
-    copy "$REPO_ROOT/claude/commands" "$WIN_HOME/.claude/commands"
-    backup_if_needed "$WIN_HOME/.claude/skills"
-    copy "$REPO_ROOT/claude/skills" "$WIN_HOME/.claude/skills"
   else
     echo "== claude (windows side): skipped (not requested) =="
   fi

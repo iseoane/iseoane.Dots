@@ -14,23 +14,13 @@ echo "== ssh config (never keys) =="
 cp "$HOME/.ssh/config" "$REPO_ROOT/ssh/config"
 echo "  synced ssh/config"
 
-echo "== claude =="
-cp "$HOME/.claude/CLAUDE.md" "$REPO_ROOT/claude/CLAUDE.md"
-cp "$HOME/.claude/settings.json" "$REPO_ROOT/claude/settings.json"
-# Guarded: on a machine not yet provisioned with these files, an unguarded cp
-# would abort the whole sync under set -e, skipping every later section.
-for f in statusline.sh subagent-statusline.sh; do
-  if [ -f "$HOME/.claude/$f" ]; then
-    cp "$HOME/.claude/$f" "$REPO_ROOT/claude/$f"
-  else
-    echo "  skip: ~/.claude/$f not found on this machine"
-  fi
-done
-rm -rf "$REPO_ROOT/claude/agents" "$REPO_ROOT/claude/commands" "$REPO_ROOT/claude/skills"
-cp -r "$HOME/.claude/agents" "$REPO_ROOT/claude/agents"
-cp -r "$HOME/.claude/commands" "$REPO_ROOT/claude/commands"
-cp -r "$HOME/.claude/skills" "$REPO_ROOT/claude/skills"
-echo "  synced claude/"
+echo "== claude (user-owned config only) =="
+node "$REPO_ROOT/claude/manage.mjs" sync --profile gentle
+if [ -d "$HOME/.claude-vanilla" ]; then
+  node "$REPO_ROOT/claude/manage.mjs" sync --profile vanilla
+else
+  echo "  claude vanilla skipped: $HOME/.claude-vanilla not found"
+fi
 
 echo "== herdr (debian/wsl side) =="
 cp "$HOME/.config/herdr/config.toml" "$REPO_ROOT/herdr/config.toml"
