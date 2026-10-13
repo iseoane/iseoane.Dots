@@ -2,7 +2,6 @@
   "theme": "Gentleman-Cute",
   "tuiMode": "fullscreen",
   "packages": [
-    "npm:gentle-engram",
     "npm:pi-web-access",
     "npm:pi-btw",
     "npm:gentle-engram@0.3.0"
