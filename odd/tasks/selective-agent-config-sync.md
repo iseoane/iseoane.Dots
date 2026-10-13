@@ -14,7 +14,7 @@ Version only user-owned configuration for Claude (gentle-ai `~/.claude` and vani
 - [x] T0 System prep (inline): gitnexus removed from this node; `owner: iseoane` added to CCA/ELI5/srOPUS; copied to vanilla.
 - [x] T1 Claude manager script + sync/apply wiring (delegated writer). Commit b5baa61.
 - [x] T2 gentle-shell manager + sync/apply wiring (delegated writer). Commit 9d4ebaa.
-- [x] T3 README update and repo snapshot from system (snapshot taken in T1/T2 via real sync). Commit: see git log (docs commit).
+- [x] T3 README update and repo snapshot from system (snapshot taken in T1/T2 via real sync). Commit d6f9da5.
 
 ## Checks
 - `node <manager> check` returns ok for each target; `git diff --stat` shows no agents/commands/skills.
