@@ -171,7 +171,7 @@ Each tool expresses it differently, because each supports a different amount:
 | wezterm | `config.color_schemes` in `.wezterm.lua`, selected by `config.color_scheme` | `xeoTheme` is active |
 | Windows Terminal | `windows-terminal/xeoTheme.json`, deployed to `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\xeoTheme\` | Select `xeoTheme` for the desired profiles in Terminal settings |
 | Starship | `[palettes.xeoTheme]` in `starship.toml` | `xeoTheme` is active; comment `palette` out to use terminal ANSI colours |
-| OpenCode | `opencode/themes/xeoTheme.json` with `opencode/tui.json` | `xeoTheme` is active globally after deployment |
+| OpenCode | `opencode/themes/xeoTheme.json` (selected in the tool-managed `tui.jsonc`) | `xeoTheme` is active globally after deployment |
 | Pi | `pi/themes/xeoTheme.json`; managed settings are merged with Pi-owned state | `xeoTheme` is active globally after deployment |
 | zsh | `ZSH_HIGHLIGHT_STYLES` in `zsh/.zshrc` | Semantic truecolor roles |
 | PowerShell | `Set-PSReadLineOption -Colors` in the PowerShell 7 profile | Same semantic roles as zsh |
@@ -233,10 +233,17 @@ instead of deleting Pi-owned keys, then runs native `npm ci`. It never copies
 `auth.json`, sessions, MCP/model caches, Calm preference, FFF history or
 `node_modules`.
 
-OpenCode versions `opencode.jsonc`, `tui.json`, themes and any future local
-agents, commands, skills, plugins or tools found in its documented config
-directories. It never copies OpenCode auth, SQLite data, prompt history, model
-state, logs, tool output, cache or installer files. Authenticate Pi, OMP, and OpenCode
+OpenCode (OpenCode 2 only, `@opencode/cli`) versions only user-owned files:
+`opencode.jsonc` (user overrides, native V2 `mcp.servers`), the
+`plugins/engram-sync.ts` plugin and `themes/`. Everything else is installed by
+its tool and is never stored in the repo nor touched by `apply`: gentle-ai
+(`gentle-ai sync`) owns `opencode.json`, agents, commands, skills and its
+plugins; engram (`engram setup opencode`) owns `plugins/engram.ts`; herdr
+(`herdr integration install opencode`) owns its plugins and TUI entries.
+`apply` merges (backs up and overwrites only changed versioned files, never
+deletes); `check` rejects tool-owned files and legacy 1.x `mcp.<name>` entries.
+It never copies OpenCode auth, SQLite data, prompt history, model state, logs,
+tool output, cache or installer files. Authenticate Pi, OMP, and OpenCode
 separately on every machine after restoring the repo.
 
 OMP versions `config.yml`, `models.yml`, `PERSONALITY.md`, curated local

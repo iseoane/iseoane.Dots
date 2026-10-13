@@ -1,33 +1,34 @@
-import { cp, lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, readFile, readdir, rename, rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoDir = dirname(fileURLToPath(import.meta.url));
-const managedFiles = ["opencode.json", "opencode.jsonc", "tui.json"];
-const managedDirectories = [
-  "themes",
+// Only user-owned files are versioned. Everything else in ~/.config/opencode is
+// installed by its tool and must never be stored here or overwritten by apply:
+// gentle-ai (`gentle-ai sync`): opencode.json, agents/, commands/, skills/,
+//   package.json and its plugins; engram (`engram setup opencode`):
+//   plugins/engram.ts; herdr (`herdr integration install opencode`): herdr
+//   plugins and tui entries.
+const managedFiles = ["opencode.jsonc", "plugins/engram-sync.ts"];
+const managedDirectories = ["themes"];
+const allowedTopLevel = new Set(["manage.mjs", "opencode.jsonc", "plugins", "themes"]);
+const toolOwnedNames = new Set([
+  "opencode.json",
+  "package.json",
+  "package-lock.json",
+  "tui.json",
+  "tui.jsonc",
   "agent",
   "agents",
   "command",
   "commands",
   "skill",
   "skills",
-  "plugin",
-  "plugins",
   "tool",
   "tools",
-];
-const forbiddenNames = new Set([
   "auth.json",
   "node_modules",
-  "opencode.db",
-  "opencode.db-shm",
-  "opencode.db-wal",
-  "log",
-  "tool-output",
-  "prompt-history.jsonl",
-  "model.json",
 ]);
 
 function parseArguments() {
@@ -138,13 +139,6 @@ async function backup(path, stamp) {
   console.log(`  backup -> ${destination}`);
 }
 
-async function assertNoSymlinks(path) {
-  const info = await lstat(path);
-  if (info.isSymbolicLink()) throw new Error(`refusing to copy symlink: ${path}`);
-  if (!info.isDirectory()) return;
-  for (const entry of await readdir(path)) await assertNoSymlinks(join(path, entry));
-}
-
 async function copyFileAtomic(source, destination) {
   await mkdir(dirname(destination), { recursive: true });
   const temporary = join(dirname(destination), `.${basename(destination)}.${process.pid}.tmp`);
@@ -158,33 +152,44 @@ async function copyFileAtomic(source, destination) {
   }
 }
 
-async function replaceDirectory(source, destination, stamp, withBackup) {
-  await assertNoSymlinks(source);
-  if (withBackup) await backup(destination, stamp);
-  await rm(destination, { recursive: true, force: true });
-  await mkdir(dirname(destination), { recursive: true });
-  await cp(source, destination, { recursive: true });
+async function listFiles(path, prefix = "") {
+  if (!(await exists(path))) return [];
+  const files = [];
+  for (const entry of await readdir(path)) {
+    const full = join(path, entry);
+    const info = await lstat(full);
+    if (info.isSymbolicLink()) throw new Error(`refusing to copy symlink: ${full}`);
+    if (info.isDirectory()) files.push(...(await listFiles(full, join(prefix, entry))));
+    else files.push(join(prefix, entry));
+  }
+  return files;
+}
+
+function assertNoLegacyMcp(config) {
+  const mcp = config?.mcp;
+  if (!mcp || typeof mcp !== "object") return;
+  const legacy = Object.keys(mcp).filter((key) => key !== "servers");
+  if (legacy.length > 0) {
+    throw new Error(`legacy OpenCode 1.x mcp entries in opencode.jsonc (use mcp.servers): ${legacy.join(", ")}`);
+  }
 }
 
 async function checkRepository() {
   for (const entry of await readdir(repoDir)) {
-    if (forbiddenNames.has(entry)) throw new Error(`forbidden OpenCode state in repository: opencode/${entry}`);
-  }
-  let configFound = false;
-  for (const file of managedFiles) {
-    const path = join(repoDir, file);
-    if (!(await exists(path))) continue;
-    const config = await readConfig(path);
-    assertNoLiteralSecrets(config);
-    if (file.startsWith("opencode.")) configFound = true;
-  }
-  if (!configFound) throw new Error("missing opencode.json or opencode.jsonc");
-
-  const themes = join(repoDir, "themes");
-  if (await exists(themes)) {
-    for (const file of await readdir(themes)) {
-      if (file.endsWith(".json")) assertNoLiteralSecrets(await readConfig(join(themes, file)));
+    if (toolOwnedNames.has(entry) || !allowedTopLevel.has(entry)) {
+      throw new Error(`tool-owned or unexpected file in repository: opencode/${entry}`);
     }
+  }
+  for (const file of await listFiles(join(repoDir, "plugins"))) {
+    if (file !== "engram-sync.ts") throw new Error(`tool-owned plugin in repository: opencode/plugins/${file}`);
+  }
+  const configPath = join(repoDir, "opencode.jsonc");
+  if (!(await exists(configPath))) throw new Error("missing opencode.jsonc");
+  const config = await readConfig(configPath);
+  assertNoLiteralSecrets(config);
+  assertNoLegacyMcp(config);
+  for (const file of await listFiles(join(repoDir, "themes"))) {
+    if (file.endsWith(".json")) assertNoLiteralSecrets(await readConfig(join(repoDir, "themes", file)));
   }
   console.log("opencode config: ok");
 }
@@ -197,35 +202,39 @@ async function sync(targetDir) {
       await rm(destination, { force: true });
       continue;
     }
-    const config = await readConfig(source);
-    assertNoLiteralSecrets(config);
+    if (file.endsWith(".jsonc")) assertNoLiteralSecrets(await readConfig(source));
     await copyFileAtomic(source, destination);
   }
   for (const directory of managedDirectories) {
-    const source = join(targetDir, directory);
     const destination = join(repoDir, directory);
-    if (await exists(source)) await replaceDirectory(source, destination, "", false);
-    else await rm(destination, { recursive: true, force: true });
+    await rm(destination, { recursive: true, force: true });
+    for (const file of await listFiles(join(targetDir, directory))) {
+      await copyFileAtomic(join(targetDir, directory, file), join(destination, file));
+    }
   }
   await checkRepository();
   console.log(`opencode config synced from ${targetDir}`);
 }
 
+// Apply merges: it only writes the versioned user files (with backups) and
+// never deletes or touches files installed by gentle-ai, engram or herdr.
 async function apply(targetDir) {
   await checkRepository();
   const stamp = timestamp();
-  await mkdir(targetDir, { recursive: true });
-  for (const file of managedFiles) {
+  const files = [...managedFiles];
+  for (const directory of managedDirectories) {
+    for (const file of await listFiles(join(repoDir, directory))) files.push(join(directory, file));
+  }
+  for (const file of files) {
     const source = join(repoDir, file);
     if (!(await exists(source))) continue;
     const destination = join(targetDir, file);
+    const unchanged =
+      (await exists(destination)) &&
+      (await readFile(source, "utf8")) === (await readFile(destination, "utf8"));
+    if (unchanged) continue;
     await backup(destination, stamp);
     await copyFileAtomic(source, destination);
-  }
-  for (const directory of managedDirectories) {
-    const source = join(repoDir, directory);
-    if (!(await exists(source))) continue;
-    await replaceDirectory(source, join(targetDir, directory), stamp, true);
   }
   console.log(`opencode config applied to ${targetDir}`);
 }

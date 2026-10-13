@@ -105,7 +105,7 @@ ensure_config_line \
 
 echo "== npm (allow trusted global install scripts, npm >= 11) =="
 if command -v npm >/dev/null 2>&1; then
-  npm config set allow-scripts="gentle-pi,opencode-ai,@google/genai,protobufjs,esbuild" --location=user
+  npm config set allow-scripts="gentle-pi,@opencode/cli,@google/genai,protobufjs,esbuild" --location=user
   echo "  set allow-scripts in ~/.npmrc"
 fi
 
