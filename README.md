@@ -86,17 +86,14 @@ scripts/worktree-management/config
                            -> copied to ~/.config/worktree-management/config AND
                               Windows .config/worktree-management/config (both OS
                               roots live in this one versioned file)
-claude/CLAUDE.md, settings.json,
-agents/, commands/, skills/,
-statusline.sh, subagent-statusline.sh
-                           -> copied into ~/.claude/ (Debian/WSL)
+claude/gentle/, claude/vanilla/
+                           -> merged by claude/manage.mjs into ~/.claude
+                              (gentle-ai) and ~/.claude-vanilla (plain)
 claude/settings.windows.json,
-statusline.ps1, subagent-statusline.ps1,
-agents/, commands/, skills/
+statusline.ps1, subagent-statusline.ps1
                            -> copied into Windows .claude/ (via /mnt/c);
-                              settings.windows.json lands as settings.json.
-                              agents/commands/skills deploy to BOTH sides but
-                              sync back from Debian only (canonical origin)
+                              settings.windows.json lands as settings.json
+gentle-shell/settings.json -> merged into ~/.gentle-shell/agent/settings.json
 nvim/                      -> copied to ~/.config/nvim (Debian/WSL) AND
                               Windows AppData/Local/nvim (via /mnt/c)
 engram/sync.sh             -> copied to ~/.engram-sync/sync.sh (Debian/WSL)
@@ -120,15 +117,28 @@ machine-local overrides per Claude Code convention.
   `IdentityFile` pointers). **Copied**, never symlinked. Private keys
   (`*.pem`, `*.ppk`, `id_*`) and `known_hosts` are gitignored and must never
   be committed — a git history is forever, even in a private repo.
-- **claude/**: **copied**. `~/.claude` mixes real config with
-  runtime/secrets (`.credentials.json`, logs, sockets, caches); symlinking
-  the whole directory would leak credentials into git. Only the config
-  subset is versioned. `settings.json` can't be shared across OSes (shell,
-  hook commands, and statusline paths differ), so there are two:
-  `claude/settings.json` (Debian/WSL, bash statuslines) and
-  `claude/settings.windows.json` (Windows, pwsh statuslines and
-  node-guarded gitnexus hooks). Each side's statusline scripts are
-  versioned next to them.
+- **claude/**: **selective merge** via `claude/manage.mjs`
+  (`apply|sync|check`, `--profile gentle|vanilla`, optional `--target`).
+  Only user-owned config is versioned; tool-installed agents, commands,
+  skills and plugins are never copied. Per profile:
+  - `settings.json`: allowlisted keys plus user hooks. Hooks whose command
+    starts with `gentle-ai` are dropped on sync and preserved from the live
+    file on apply; `enabledPlugins`, `skillOverrides` and
+    `extraKnownMarketplaces` are never touched. Home paths are stored as
+    `$HOME/` and expanded on apply.
+  - `CLAUDE.md`: vanilla versions the whole file; gentle versions only the
+    block between `<!-- dots:user-rules:start -->` and
+    `<!-- dots:user-rules:end -->`, replaced in place on apply so gentle-ai's
+    injected sections stay intact.
+  - `output-styles/`: only styles whose frontmatter `meta` has
+    `owner: iseoane`.
+  - gentle also ships `statusline.sh`, `subagent-statusline.sh` and
+    `hooks/herdr-agent-state.sh` (made executable on apply).
+  Windows keeps its own copied `claude/settings.windows.json` and pwsh
+  statuslines.
+- **gentle-shell/**: `gentle-shell/manage.mjs` (`apply|sync|check`) versions
+  only `theme`, `tuiMode` and `packages` from `settings.json`; extensions,
+  npm, `auth.json` and `models-store.json` stay unversioned.
 - **herdr/**, **wezterm/**, **powershell/**, **nvim/**, **starship/**:
   **copied with timestamped backups** — they live at different paths per OS
   (or only exist on one side), so a symlink can't cover both. The small Omarchy
@@ -206,6 +216,9 @@ node opencode/manage.mjs check
 node omp/manage.mjs sync
 node omp/manage.mjs apply
 node omp/manage.mjs check
+node claude/manage.mjs check --profile gentle
+node claude/manage.mjs check --profile vanilla
+node gentle-shell/manage.mjs check
 ```
 
 Pi versions its curated settings, model overrides, MCP definition, all local
