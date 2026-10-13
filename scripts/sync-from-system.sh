@@ -59,6 +59,13 @@ node "$REPO_ROOT/opencode/manage.mjs" sync
 echo "== pi (config + extensions + npm manifests) =="
 node "$REPO_ROOT/pi/manage.mjs" sync
 
+echo "== gentle-shell (settings.json allowlisted keys only) =="
+if [ -d "$HOME/.gentle-shell/agent" ]; then
+  node "$REPO_ROOT/gentle-shell/manage.mjs" sync
+else
+  echo "  gentle-shell skipped: $HOME/.gentle-shell/agent not found"
+fi
+
 echo "== omp (safe declarative config + plugins) =="
 if [ -d "$HOME/.omp/agent" ]; then
   node "$REPO_ROOT/omp/manage.mjs" sync

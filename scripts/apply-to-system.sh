@@ -7,7 +7,7 @@
 # see README for why symlinks aren't used there).
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-# Claude config (CLAUDE.md, settings, user rules, allowlisted settings, user hooks, owned output styles, statuslines) is
+# Claude config (user rules, allowlisted settings, user hooks, owned output styles, statuslines) is
 # the one section you don't always want restored from the repo -- live edits
 # on a given machine sometimes need to stay live a while before syncing back.
 # Everything else here is safe to always reapply, so only this gets a prompt.
@@ -108,6 +108,13 @@ node "$REPO_ROOT/opencode/manage.mjs" apply
 
 echo "== pi (config + extensions + native npm dependencies) =="
 node "$REPO_ROOT/pi/manage.mjs" apply
+
+echo "== gentle-shell (settings.json allowlisted keys only) =="
+if [ -d "$HOME/.gentle-shell/agent" ]; then
+  node "$REPO_ROOT/gentle-shell/manage.mjs" apply
+else
+  echo "  gentle-shell skipped: $HOME/.gentle-shell/agent not found"
+fi
 
 echo "== omp (safe declarative config + plugins) =="
 if command -v omp >/dev/null 2>&1; then
