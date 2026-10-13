@@ -29,10 +29,11 @@ step "APT upgrade"    sudo apt-get full-upgrade -y --fix-missing
 step "APT autoremove" sudo apt-get autoremove --purge -y
 
 # --- 2. npm ----------------------------------------------------------------
-# Updates npm itself and generic global packages (opencode, pi runtime...).
-# npm >= 11 blocks install scripts unless allowed. Trusted packages are listed
-# once in the user npmrc (allow-scripts=gentle-pi,opencode-ai,@google/genai,
-# protobufjs,esbuild); without it opencode-ai and gentle-pi end up half-installed.
+# Updates npm itself and generic global packages (OpenCode 2 @opencode/cli,
+# pi runtime...). npm >= 11 blocks install scripts unless allowed. Trusted
+# packages are listed once in the user npmrc (allow-scripts=gentle-pi,
+# @opencode/cli,@google/genai,protobufjs,esbuild); without it @opencode/cli
+# and gentle-pi end up half-installed.
 section "2. npm"
 step "npm self-update"     npm install -g npm@latest
 step "npm global packages" npm update -g
@@ -67,6 +68,10 @@ have codex  && step "Codex"       codex update
 # sync only touches opencode, claude-code and codex (Pi is not managed).
 step "gentle-ai upgrade (+ engram, gga)" gentle-ai upgrade
 step "gentle-ai sync"                    gentle-ai sync
+
+# Keep the OpenCode 2 plugins owned by engram and herdr current (non-interactive).
+have opencode && step "engram setup opencode" engram setup opencode
+have opencode && have herdr && step "herdr integration opencode" herdr integration install opencode
 
 # A running `engram serve` keeps the old (deleted) binary after an upgrade.
 restart_engram_serve() {
