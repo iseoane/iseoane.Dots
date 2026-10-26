@@ -1,0 +1,1056 @@
+{
+  "format": "agent-depot-profile/v2",
+  "agentDepotVersion": "0.6.0",
+  "sources": [
+    {
+      "url": "https://github.com/mattpocock/skills",
+      "included": true
+    },
+    {
+      "url": "https://github.com/michael-denyer/pstack-claude.git",
+      "included": true
+    }
+  ],
+  "skills": [
+    {
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "agent-depot-apprecipe",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "doctor-md-agents",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "doctor-md-skill",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/ask-matt",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/code-review",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/codebase-design",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/diagnosing-bugs",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/domain-modeling",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/grill-with-docs",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/implement",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/implement-spec",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/improve-codebase-architecture",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/pr",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/prototype",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/research",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/retro",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/setup-matt-pocock-skills",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/to-spec",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/to-tickets",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/triage",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/wayfinder",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/wizard",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/misc/git-guardrails-claude-code",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/misc/migrate-to-shoehorn",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/misc/scaffold-exercises",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/misc/setup-pre-commit",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/grill-me",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/grilling",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/handoff",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/to-questionnaire",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/wait-what",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/writing-for-agents",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    }
+  ],
+  "apps": [
+    {
+      "name": "codegraph",
+      "install": {
+        "manual": "Linux x64/arm64 standalone channel. In your own terminal, review the upstream installer, then run `curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh` in that terminal. This installs the bundled runtime under ~/.codegraph/versions and links ~/.local/bin/codegraph; it does not wire agents or initialize projects. Open a new terminal and verify codegraph --version. Do not install a second npm/npx copy. Installer source: https://github.com/colbymchenry/codegraph/blob/main/install.sh"
+      },
+      "update": {
+        "argv": [
+          "codegraph",
+          "upgrade"
+        ]
+      },
+      "uninstall": {
+        "manual": "First run the separate teardown for any configured Hosts you want disconnected. Then manually remove only the standalone launcher ~/.local/bin/codegraph (verify its symlink points into ~/.codegraph/versions), the ~/.codegraph/current link, and the standalone bundles under ~/.codegraph/versions. Preserve other ~/.codegraph data and per-project indexes unless you separately choose to delete them. Adjust paths if you installed to custom directories. Do not use codegraph uninstall here: it also removes Host wiring and every CLI installation it finds; --target none returns without removing the CLI. If another channel still provides codegraph, remove that copy using its own channel before attesting completion."
+      },
+      "version": {
+        "argv": [
+          "codegraph",
+          "--version"
+        ],
+        "pattern": "^\\s*v?(\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)\\s*$"
+      },
+      "platform": "linux",
+      "homepage": "https://github.com/colbymchenry/codegraph",
+      "latest": {
+        "github": "colbymchenry/codegraph"
+      },
+      "setup": {
+        "claude": {
+          "argv": [
+            "codegraph",
+            "install",
+            "--target",
+            "claude",
+            "--location",
+            "global",
+            "--yes"
+          ]
+        },
+        "codex": {
+          "argv": [
+            "codegraph",
+            "install",
+            "--target",
+            "codex",
+            "--location",
+            "global",
+            "--yes"
+          ]
+        },
+        "opencode": {
+          "argv": [
+            "codegraph",
+            "install",
+            "--target",
+            "opencode",
+            "--location",
+            "global",
+            "--yes"
+          ]
+        }
+      },
+      "teardown": {
+        "claude": {
+          "argv": [
+            "codegraph",
+            "uninstall",
+            "--target",
+            "claude",
+            "--location",
+            "global",
+            "--keep-cli",
+            "--yes"
+          ]
+        },
+        "codex": {
+          "argv": [
+            "codegraph",
+            "uninstall",
+            "--target",
+            "codex",
+            "--location",
+            "global",
+            "--keep-cli",
+            "--yes"
+          ]
+        },
+        "opencode": {
+          "argv": [
+            "codegraph",
+            "uninstall",
+            "--target",
+            "opencode",
+            "--location",
+            "global",
+            "--keep-cli",
+            "--yes"
+          ]
+        }
+      }
+    },
+    {
+      "name": "engram",
+      "install": {
+        "argv": [
+          "brew",
+          "install",
+          "--formula",
+          "--yes",
+          "gentleman-programming/tap/engram"
+        ]
+      },
+      "update": {
+        "argv": [
+          "brew",
+          "upgrade",
+          "--formula",
+          "--yes",
+          "gentleman-programming/tap/engram"
+        ]
+      },
+      "uninstall": {
+        "argv": [
+          "brew",
+          "uninstall",
+          "--formula",
+          "gentleman-programming/tap/engram"
+        ]
+      },
+      "version": {
+        "argv": [
+          "engram",
+          "version"
+        ],
+        "pattern": "^engram\\s+v?(\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)\\s*$"
+      },
+      "platform": "linux",
+      "homepage": "https://github.com/Gentleman-Programming/engram",
+      "latest": {
+        "github": "Gentleman-Programming/engram"
+      },
+      "setup": {
+        "pi": {
+          "argv": [
+            "engram",
+            "setup",
+            "pi"
+          ]
+        },
+        "claude": {
+          "manual": "Ejecuta engram setup claude-code en tu terminal (requiere claude, jq y curl) y responde a la pregunta de permisos. Incluye plugin del marketplace y registro MCP; no añadas otra copia. Reinicia Claude."
+        },
+        "codex": {
+          "argv": [
+            "engram",
+            "setup",
+            "codex"
+          ]
+        },
+        "opencode": {
+          "argv": [
+            "engram",
+            "setup",
+            "opencode"
+          ]
+        }
+      },
+      "teardown": {
+        "pi": {
+          "argv": [
+            "pi",
+            "remove",
+            "npm:gentle-engram@0.2.0"
+          ]
+        },
+        "claude": {
+          "manual": "Retira el plugin Engram con el gestor de plugins de Claude y ejecuta claude mcp remove engram --scope user. Si autorizaste permisos, retira solo las entradas de Engram en permissions.allow. Conserva otros ajustes y ~/.engram. Reinicia Claude."
+        },
+        "codex": {
+          "manual": "Retira engram@engram con el gestor de plugins de Codex. En CODEX_HOME (o ~/.codex), elimina solo [mcp_servers.engram], engram-instructions.md y engram-compact-prompt.md. Conserva otros ajustes y ~/.engram. Reinicia Codex."
+        },
+        "opencode": {
+          "manual": "Retira ~/.config/opencode/plugins/engram.ts y solo la entrada mcp.engram de la configuración global. Quita opencode-subagent-statusline de tui.json/tui.jsonc únicamente si lo añadió este setup y no lo usas aparte. Conserva otros ajustes y ~/.engram. Reinicia OpenCode."
+        }
+      }
+    },
+    {
+      "name": "gentle-shell",
+      "install": {
+        "argv": [
+          "npm",
+          "install",
+          "--global",
+          "gentle-pi",
+          "--allow-scripts=gentle-pi,esbuild,protobufjs,@google/genai"
+        ]
+      },
+      "update": {
+        "argv": [
+          "npm",
+          "install",
+          "--global",
+          "gentle-pi@latest",
+          "--allow-scripts=gentle-pi,esbuild,protobufjs,@google/genai"
+        ]
+      },
+      "uninstall": {
+        "argv": [
+          "npm",
+          "uninstall",
+          "--global",
+          "gentle-pi"
+        ]
+      },
+      "version": {
+        "argv": [
+          "gentle-shell",
+          "--version"
+        ],
+        "pattern": "^gentle-shell\\s+(\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)"
+      },
+      "platform": "linux",
+      "homepage": "https://github.com/Gentleman-Programming/gentle-shell",
+      "latest": {
+        "npm": "gentle-pi"
+      }
+    }
+  ],
+  "packages": [
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/michael-denyer/pstack-claude.git"
+      },
+      "version": {
+        "policy": "latest"
+      },
+      "host": "pi",
+      "root": ""
+    }
+  ],
+  "replicas": [
+    {
+      "kind": "app",
+      "name": "codegraph",
+      "platform": "linux"
+    },
+    {
+      "kind": "app",
+      "name": "engram",
+      "platform": "linux"
+    },
+    {
+      "kind": "app",
+      "name": "gentle-shell",
+      "platform": "linux"
+    },
+    {
+      "kind": "package",
+      "selection": {
+        "source": {
+          "kind": "external",
+          "url": "https://github.com/michael-denyer/pstack-claude.git"
+        },
+        "version": {
+          "policy": "latest"
+        },
+        "host": "pi",
+        "root": ""
+      }
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "agent-depot-apprecipe"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "doctor-md-agents"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "doctor-md-skill"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/ask-matt"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/code-review"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/codebase-design"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/diagnosing-bugs"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/domain-modeling"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/grill-with-docs"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/implement"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/implement-spec"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/improve-codebase-architecture"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/pr"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/prototype"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/research"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/retro"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/setup-matt-pocock-skills"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/to-spec"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/to-tickets"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/triage"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/wayfinder"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/engineering/wizard"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/misc/git-guardrails-claude-code"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/misc/migrate-to-shoehorn"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/misc/scaffold-exercises"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/misc/setup-pre-commit"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/grill-me"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/grilling"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/handoff"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/to-questionnaire"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/wait-what"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/mattpocock/skills"
+      },
+      "path": "skills/productivity/writing-for-agents"
+    }
+  ]
+}
