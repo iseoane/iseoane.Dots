@@ -5,8 +5,7 @@
     "@juicesharp/rpiv-ask-user-question": "^2.9.0",
     "@juicesharp/rpiv-todo": "^2.9.0",
     "@ryan_nookpi/pi-extension-codex-fast-mode": "^0.2.6",
-    "gentle-engram": "^0.1.11",
-    "pi-mcp-adapter": "^2.32.1",
+    "gentle-engram": "^0.4.2",
     "pi-web-access": "^0.27.0"
   }
 }
