@@ -163,9 +163,6 @@ async function checkRepository() {
     const name = packageName(specifier);
     if (!dependencies[name]) throw new Error(`Pi package missing from npm/package.json: ${name}`);
   }
-  for (const required of ["@heyhuynhgiabuu/pi-pretty"]) {
-    if (!dependencies[required]) throw new Error(`local extension dependency missing: ${required}`);
-  }
   for (const file of ["codegraph-tools.ts", "terminal-status-title.js"]) {
     if (!(await exists(join(repoDir, "extensions", file)))) throw new Error(`missing Pi extension: ${file}`);
   }
