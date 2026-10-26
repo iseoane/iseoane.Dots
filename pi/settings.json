@@ -13,6 +13,6 @@
     "npm:@juicesharp/rpiv-ask-user-question",
     "npm:@juicesharp/rpiv-todo"
   ],
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.5"
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-6.1-sol"
 }
