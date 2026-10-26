@@ -119,31 +119,35 @@ for path in glob.glob(os.path.join(chunks_dir, "*.jsonl.gz")):
   if ($LASTEXITCODE -ne 0) { Write-Log 'WARN: guard de relaciones fallo' }
 }
 
+# Trae el remoto con rebase, distinguiendo la CAUSA del fallo (igual que sync.sh).
+# Como los chunks son append-only, los conflictos reales se limitan al manifest.
+#   0 -> rebase OK
+#   1 -> transitorio (el fetch no respondió; se reintenta con backoff)
+#   2 -> conflicto de rebase REAL (requiere revisión manual)
+# Toda salida nativa va a `*>$null`: cualquier salida no redirigida dentro de
+# una función de PowerShell pasa a formar parte de su valor de retorno.
+$FetchRetries = [int](Get-EnvOr 'ENGRAM_FETCH_RETRIES' '3')
 function Rebase-Remote {
-  # `*>$null` on BOTH git calls, not just stderr: any unredirected output from
-  # a native command inside a PowerShell function becomes part of that
-  # function's RETURN VALUE alongside the explicit `return`. On a real
-  # conflict, `git pull --rebase` prints several lines ("Auto-merging...",
-  # "CONFLICT (content)...", hint text) which turned `Rebase-Remote`'s return
-  # into a multi-element array -- and a non-empty array is ALWAYS truthy in
-  # PowerShell, no matter what its last element is. So `if (-not
-  # (Rebase-Remote))` never fired on a genuine conflict: it silently treated
-  # every failed rebase as success and let the caller push into a still-broken
-  # repo. Confirmed live: a real conflict left `$r` holding conflict text plus
-  # `$false`, and `-not $r` still evaluated to `$false`. Suppressing all
-  # output makes the function's only output the literal boolean.
-  & git -c http.version=HTTP/1.1 pull --rebase --autostash -q origin $Branch *>$null
-  if ($LASTEXITCODE -ne 0) {
-    & git rebase --abort *>$null
-    return $false
+  $ok = $false
+  for ($i = 1; $i -le $FetchRetries; $i++) {
+    & git -c http.version=HTTP/1.1 fetch -q origin $Branch *>$null
+    if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+    if ($i -lt $FetchRetries) { Start-Sleep -Seconds $i }
   }
-  return $true
+  if (-not $ok) { return 1 }
+  & git rebase --autostash -q "origin/$Branch" *>$null
+  if ($LASTEXITCODE -eq 0) { return 0 }
+  & git rebase --abort *>$null
+  return 2
 }
 
 # ── Acciones ──────────────────────────────────────────────────────────────────
 function Do-Pull {
   Ensure-Repo
-  if (-not (Rebase-Remote)) { Die-Soft 'git pull --rebase falló/conflicto en pull' }
+  switch (Rebase-Remote) {
+    1 { Write-Log 'Pull pospuesto (red transitoria); se reintenta en el próximo sync.'; return }
+    2 { Die-Soft 'conflicto de rebase REAL en pull; requiere revisión manual' }
+  }
   & $EngramBin sync --import 2>$null
   if ($LASTEXITCODE -eq 0) { Write-Log 'Import OK.' }
   else { Write-Log 'WARN: engram sync --import devolvió error' }
@@ -158,8 +162,9 @@ function Do-Push {
   Strip-Relations
   Commit-IfChanges
   for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
-    if (-not (Rebase-Remote)) {
-      Die-Soft "git pull --rebase falló/conflicto (intento $attempt); commit local guardado para el próximo sync"
+    switch (Rebase-Remote) {
+      1 { Write-Log "Push pospuesto (red transitoria, intento $attempt); commit local intacto, se reintenta en el próximo sync."; return }
+      2 { Die-Soft 'conflicto de rebase REAL en push; commit local intacto, requiere revisión manual' }
     }
     # Importa lo que haya traído el rebase de la otra máquina (idempotente)
     & $EngramBin sync --import 2>$null | Out-Null
