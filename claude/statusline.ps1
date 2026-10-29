@@ -5,6 +5,8 @@
 # Requiere: git en el PATH
 # ─────────────────────────────────────────────────────────────────────────────
 
+param([string]$Theme = $env:STATUSLINE_THEME)
+
 [Console]::InputEncoding  = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -35,6 +37,14 @@ $RED      = C 243 139 168
 $TEAL     = C 148 226 213
 $SURFACE2 = C 88 91 112
 $OVERLAY0 = C 108 112 134
+# ── Paleta alternativa xeo-gta (-Theme xeo-gta o STATUSLINE_THEME), a juego con el tema custom ──
+if ($Theme -eq "xeo-gta") {
+    $MAUVE = C 185 140 255; $BLUE = C 79 200 240;  $GREEN = C 124 242 154
+    $PINK  = C 255 46 154;  $SKY  = C 62 230 224;  $SAPPHIRE = C 79 200 240
+    $LAVENDER = C 185 140 255; $YELLOW = C 245 230 99; $PEACH = C 255 138 61
+    $RED   = C 255 61 94;   $TEAL = C 62 230 224;  $SURFACE2 = C 58 63 99
+    $OVERLAY0 = C 122 127 158; $TEXT = C 79 200 240
+}
 $RESET    = "$ESC[0m"
 $SEP      = "$SURFACE2 $VBAR $RESET"
 

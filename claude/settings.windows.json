@@ -343,16 +343,16 @@
   "remoteControlAtStartup": true,
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
-    "command": "pwsh -NoProfile -File C:/Users/iseoane/.claude/statusline.ps1",
+    "command": "pwsh -NoProfile -File C:/Users/iseoane/.claude/statusline.ps1 -Theme xeo-gta",
     "padding": 0,
     "refreshInterval": 30,
     "type": "command"
   },
   "subagentStatusLine": {
-    "command": "pwsh -NoProfile -File C:/Users/iseoane/.claude/subagent-statusline.ps1",
+    "command": "pwsh -NoProfile -File C:/Users/iseoane/.claude/subagent-statusline.ps1 -Theme xeo-gta",
     "type": "command"
   },
-  "theme": "dark",
+  "theme": "custom:xeo-gta",
   "tui": "fullscreen",
   "voice": {
     "enabled": true,
