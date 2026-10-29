@@ -49,11 +49,13 @@ const profiles = {
     defaultTarget: join(homedir(), ".claude"),
     claudeMd: "block",
     scripts: ["statusline.sh", "subagent-statusline.sh", "hooks/herdr-agent-state.sh"],
+    themes: [],
   },
   vanilla: {
     defaultTarget: join(homedir(), ".claude-vanilla"),
     claudeMd: "whole",
     scripts: [],
+    themes: ["xeo-gta.json"],
   },
 };
 const forbiddenNames = new Set([
@@ -268,6 +270,9 @@ async function checkRepository(profile, repoDir) {
   for (const script of profiles[profile].scripts) {
     if (!(await exists(join(repoDir, script)))) throw new Error(`missing Claude script: ${profile}/${script}`);
   }
+  for (const theme of profiles[profile].themes) {
+    await readJson(join(repoDir, "themes", theme));
+  }
   console.log(`claude ${profile} config: ok`);
 }
 
@@ -299,6 +304,15 @@ async function sync(profile, repoDir, targetDir) {
     }
     await mkdir(dirname(join(repoDir, script)), { recursive: true });
     await cp(source, join(repoDir, script), { force: true });
+  }
+  for (const theme of profiles[profile].themes) {
+    const source = join(targetDir, "themes", theme);
+    if (!(await exists(source))) {
+      console.log(`  skip: ${source} not found`);
+      continue;
+    }
+    await mkdir(join(repoDir, "themes"), { recursive: true });
+    await cp(source, join(repoDir, "themes", theme), { force: true });
   }
   await checkRepository(profile, repoDir);
   console.log(`claude ${profile} config synced from ${targetDir}`);
@@ -341,6 +355,12 @@ async function apply(profile, repoDir, targetDir) {
     await mkdir(dirname(destination), { recursive: true });
     await cp(join(repoDir, script), destination, { force: true });
     await chmod(destination, 0o755);
+  }
+  for (const theme of profiles[profile].themes) {
+    const destination = join(targetDir, "themes", theme);
+    await backup(destination, stamp);
+    await mkdir(dirname(destination), { recursive: true });
+    await cp(join(repoDir, "themes", theme), destination, { force: true });
   }
   console.log(`claude ${profile} config applied to ${targetDir}`);
 }
