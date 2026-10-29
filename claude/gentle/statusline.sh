@@ -23,6 +23,14 @@ RED=$(c 243 139 168)        # barra roja
 TEAL=$(c 148 226 213)       # PR
 SURFACE2=$(c 88 91 112)     # bloques vacíos / separadores
 OVERLAY0=$(c 108 112 134)   # texto tenue (paréntesis, hora reset)
+# ── Paleta alternativa xeo-gta (STATUSLINE_THEME=xeo-gta), a juego con el tema custom ──
+if [ "${STATUSLINE_THEME:-}" = "xeo-gta" ]; then
+    MAUVE=$(c 185 140 255); BLUE=$(c 79 200 240);   GREEN=$(c 124 242 154)
+    PINK=$(c 255 46 154);   SKY=$(c 62 230 224);    SAPPHIRE=$(c 79 200 240)
+    LAVENDER=$(c 185 140 255); YELLOW=$(c 245 230 99); PEACH=$(c 255 138 61)
+    RED=$(c 255 61 94);     TEAL=$(c 62 230 224);   SURFACE2=$(c 58 63 99)
+    OVERLAY0=$(c 122 127 158); TEXT=$(c 79 200 240)
+fi
 RESET=$'\033[0m'
 SEP="${SURFACE2} │ ${RESET}"
 

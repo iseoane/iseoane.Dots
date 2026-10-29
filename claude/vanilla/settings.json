@@ -55,15 +55,15 @@
   "language": "Español",
   "statusLine": {
     "type": "command",
-    "command": "$HOME/.claude/statusline.sh vanilla",
+    "command": "STATUSLINE_THEME=xeo-gta $HOME/.claude/statusline.sh vanilla",
     "padding": 0,
     "refreshInterval": 30
   },
   "subagentStatusLine": {
     "type": "command",
-    "command": "$HOME/.claude/subagent-statusline.sh"
+    "command": "STATUSLINE_THEME=xeo-gta $HOME/.claude/subagent-statusline.sh"
   },
-  "theme": "dark-daltonized",
+  "theme": "custom:xeo-gta",
   "editorMode": "normal",
   "tui": "fullscreen",
   "worktree": {
