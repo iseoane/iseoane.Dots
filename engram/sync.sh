@@ -113,7 +113,42 @@ rebase_remote() {
   # Fetch OK: rebasa sobre lo traido. Un fallo aqui SI es un conflicto real.
   git rebase --autostash -q "origin/$BRANCH" 2>/dev/null && return 0
   git rebase --abort 2>/dev/null || true
+  merge_manifest && return 0
   return 2
+}
+
+# Plan B cuando el rebase choca: merge con origin y, si el unico conflicto es
+# .engram/manifest.json, une los chunks de ambos lados por id (append-only).
+# Devuelve 0 si el merge quedo commiteado; si no, lo aborta y devuelve 1.
+merge_manifest() {
+  local manifest=".engram/manifest.json" conflicts n
+  if git merge --no-edit -q "origin/$BRANCH" >/dev/null 2>&1; then
+    log "Rebase fallo; merge limpio con origin."
+    return 0
+  fi
+  conflicts="$(git diff --name-only --diff-filter=U 2>/dev/null)"
+  if [[ "$conflicts" != "$manifest" ]] || ! command -v python3 >/dev/null 2>&1; then
+    git merge --abort 2>/dev/null || true
+    return 1
+  fi
+  if ! n="$(python3 - "$manifest" <<'PY'
+import json, subprocess, sys
+path = sys.argv[1]
+show = lambda stage: json.loads(subprocess.check_output(["git", "show", f":{stage}:{path}"]))
+ours, theirs = show(2), show(3)
+by_id = {c["id"]: c for c in ours["chunks"] + theirs["chunks"]}
+ours["chunks"] = sorted(by_id.values(), key=lambda c: c["created_at"])
+with open(path, "w", encoding="utf-8", newline="\n") as f:
+    json.dump(ours, f, indent=2)
+    f.write("\n")
+print(len(ours["chunks"]))
+PY
+)"; then
+    git merge --abort 2>/dev/null || true
+    return 1
+  fi
+  git add -- "$manifest" && git commit -q --no-edit || { git merge --abort 2>/dev/null || true; return 1; }
+  log "Conflicto en manifest resuelto por union ($n chunks)."
 }
 
 # ── Acciones ──────────────────────────────────────────────────────────────────

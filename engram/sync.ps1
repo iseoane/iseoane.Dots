@@ -138,7 +138,40 @@ function Rebase-Remote {
   & git rebase --autostash -q "origin/$Branch" *>$null
   if ($LASTEXITCODE -eq 0) { return 0 }
   & git rebase --abort *>$null
+  if (Merge-Manifest) { return 0 }
   return 2
+}
+
+# Plan B cuando el rebase choca: merge con origin y, si el único conflicto es
+# .engram/manifest.json, une los chunks de ambos lados por id (append-only).
+# Devuelve $true si el merge quedó commiteado; si no, lo aborta y da $false.
+function Merge-Manifest {
+  $manifest = '.engram/manifest.json'
+  & git merge --no-edit -q "origin/$Branch" *>$null
+  if ($LASTEXITCODE -eq 0) { Write-Log 'Rebase falló; merge limpio con origin.'; return $true }
+  $conflicts = @(& git diff --name-only --diff-filter=U 2>$null)
+  if ($conflicts.Count -ne 1 -or $conflicts[0] -ne $manifest) {
+    & git merge --abort *>$null
+    return $false
+  }
+  try {
+    $ours   = (& git show ":2:$manifest" 2>$null | Out-String) | ConvertFrom-Json
+    $theirs = (& git show ":3:$manifest" 2>$null | Out-String) | ConvertFrom-Json
+    $byId = [ordered]@{}
+    foreach ($c in @($ours.chunks) + @($theirs.chunks)) { $byId[$c.id] = $c }
+    $ours.chunks = @($byId.Values | Sort-Object created_at)
+    $json = $ours | ConvertTo-Json -Depth 10
+    [IO.File]::WriteAllText((Join-Path (Get-Location) $manifest), "$json`n")
+  }
+  catch {
+    & git merge --abort *>$null
+    return $false
+  }
+  & git add -- $manifest *>$null
+  & git commit -q --no-edit *>$null
+  if ($LASTEXITCODE -ne 0) { & git merge --abort *>$null; return $false }
+  Write-Log "Conflicto en manifest resuelto por unión ($($ours.chunks.Count) chunks)."
+  return $true
 }
 
 # ── Acciones ──────────────────────────────────────────────────────────────────
