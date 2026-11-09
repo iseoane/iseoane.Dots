@@ -173,6 +173,7 @@
       {
         "hooks": [
           {
+            "async": true,
             "command": "pwsh -NoProfile -File C:/Users/iseoane/.engram-sync/sync.ps1 push",
             "timeout": 60,
             "type": "command"

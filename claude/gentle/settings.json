@@ -192,7 +192,8 @@
           {
             "type": "command",
             "command": "$HOME/.engram-sync/sync.sh push",
-            "timeout": 60
+            "timeout": 60,
+            "async": true
           }
         ]
       }
