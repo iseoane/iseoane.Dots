@@ -1,0 +1,530 @@
+{
+  "format": "agent-depot-profile/v2",
+  "agentDepotVersion": "0.6.11",
+  "sources": [
+    {
+      "url": "https://github.com/Graphify-Labs/graphify",
+      "included": true
+    },
+    {
+      "url": "https://github.com/abhigyanpatwari/GitNexus",
+      "included": true
+    },
+    {
+      "url": "https://github.com/cloudflare/security-audit-skill",
+      "included": true
+    },
+    {
+      "url": "https://github.com/cursor/plugins/tree/main/pstack",
+      "included": true
+    },
+    {
+      "url": "https://github.com/iseoane/isSWF",
+      "included": true
+    },
+    {
+      "url": "https://github.com/leonxlnx/taste-skill",
+      "included": true
+    },
+    {
+      "url": "https://github.com/mattpocock/skills",
+      "included": true
+    },
+    {
+      "url": "https://github.com/microsoft/playwright",
+      "included": true
+    },
+    {
+      "url": "https://github.com/pbakaus/impeccable",
+      "included": true
+    },
+    {
+      "url": "https://github.com/tt-a1i/archify",
+      "included": true
+    }
+  ],
+  "skills": [
+    {
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "agent-depot-apprecipe",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "claude",
+        "pi"
+      ]
+    },
+    {
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "doctor-md-agents",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "claude",
+        "pi"
+      ]
+    },
+    {
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "doctor-md-skill",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "claude",
+        "pi"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/cloudflare/security-audit-skill"
+      },
+      "path": "skills/security-audit",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": ".agents/skills/archify-review",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": ".agents/skills/archify-tuning",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": ".agents/skills/simplify-codebase",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": ".agents/skills/test-value",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude"
+      ]
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": "archify",
+      "version": {
+        "policy": "latest"
+      },
+      "hosts": [
+        "pi",
+        "claude"
+      ]
+    }
+  ],
+  "apps": [
+    {
+      "name": "codegraph",
+      "install": {
+        "manual": "Linux x64/arm64 standalone channel. In your own terminal, review the upstream installer, then run `curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh` in that terminal. This installs the bundled runtime under ~/.codegraph/versions and links ~/.local/bin/codegraph; it does not wire agents or initialize projects. Open a new terminal and verify codegraph --version. Do not install a second npm/npx copy. Installer source: https://github.com/colbymchenry/codegraph/blob/main/install.sh"
+      },
+      "update": {
+        "argv": [
+          "codegraph",
+          "upgrade"
+        ]
+      },
+      "uninstall": {
+        "manual": "First run the separate teardown for any configured Hosts you want disconnected. Then manually remove only the standalone launcher ~/.local/bin/codegraph (verify its symlink points into ~/.codegraph/versions), the ~/.codegraph/current link, and the standalone bundles under ~/.codegraph/versions. Preserve other ~/.codegraph data and per-project indexes unless you separately choose to delete them. Adjust paths if you installed to custom directories. Do not use codegraph uninstall here: it also removes Host wiring and every CLI installation it finds; --target none returns without removing the CLI. If another channel still provides codegraph, remove that copy using its own channel before attesting completion."
+      },
+      "version": {
+        "argv": [
+          "codegraph",
+          "--version"
+        ],
+        "pattern": "^\\s*v?(\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)\\s*$"
+      },
+      "platform": "linux",
+      "homepage": "https://github.com/colbymchenry/codegraph",
+      "latest": {
+        "github": "colbymchenry/codegraph"
+      },
+      "setup": {
+        "claude": {
+          "argv": [
+            "codegraph",
+            "install",
+            "--target",
+            "claude",
+            "--location",
+            "global",
+            "--yes"
+          ]
+        },
+        "codex": {
+          "argv": [
+            "codegraph",
+            "install",
+            "--target",
+            "codex",
+            "--location",
+            "global",
+            "--yes"
+          ]
+        },
+        "opencode": {
+          "argv": [
+            "codegraph",
+            "install",
+            "--target",
+            "opencode",
+            "--location",
+            "global",
+            "--yes"
+          ]
+        }
+      },
+      "teardown": {
+        "claude": {
+          "argv": [
+            "codegraph",
+            "uninstall",
+            "--target",
+            "claude",
+            "--location",
+            "global",
+            "--keep-cli",
+            "--yes"
+          ]
+        },
+        "codex": {
+          "argv": [
+            "codegraph",
+            "uninstall",
+            "--target",
+            "codex",
+            "--location",
+            "global",
+            "--keep-cli",
+            "--yes"
+          ]
+        },
+        "opencode": {
+          "argv": [
+            "codegraph",
+            "uninstall",
+            "--target",
+            "opencode",
+            "--location",
+            "global",
+            "--keep-cli",
+            "--yes"
+          ]
+        }
+      }
+    },
+    {
+      "name": "engram",
+      "install": {
+        "argv": [
+          "brew",
+          "install",
+          "--formula",
+          "--yes",
+          "gentleman-programming/tap/engram"
+        ]
+      },
+      "update": {
+        "argv": [
+          "brew",
+          "upgrade",
+          "--formula",
+          "--yes",
+          "gentleman-programming/tap/engram"
+        ]
+      },
+      "uninstall": {
+        "argv": [
+          "brew",
+          "uninstall",
+          "--formula",
+          "gentleman-programming/tap/engram"
+        ]
+      },
+      "version": {
+        "argv": [
+          "engram",
+          "version"
+        ],
+        "pattern": "^engram\\s+v?(\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)\\s*$"
+      },
+      "platform": "linux",
+      "homepage": "https://github.com/Gentleman-Programming/engram",
+      "latest": {
+        "github": "Gentleman-Programming/engram"
+      },
+      "setup": {
+        "pi": {
+          "argv": [
+            "engram",
+            "setup",
+            "pi"
+          ]
+        },
+        "claude": {
+          "manual": "Ejecuta engram setup claude-code en tu terminal (requiere claude, jq y curl) y responde a la pregunta de permisos. Incluye plugin del marketplace y registro MCP; no añadas otra copia. Reinicia Claude."
+        },
+        "codex": {
+          "argv": [
+            "engram",
+            "setup",
+            "codex"
+          ]
+        },
+        "opencode": {
+          "argv": [
+            "engram",
+            "setup",
+            "opencode"
+          ]
+        }
+      },
+      "teardown": {
+        "pi": {
+          "argv": [
+            "pi",
+            "remove",
+            "npm:gentle-engram@0.2.0"
+          ]
+        },
+        "claude": {
+          "manual": "Retira el plugin Engram con el gestor de plugins de Claude y ejecuta claude mcp remove engram --scope user. Si autorizaste permisos, retira solo las entradas de Engram en permissions.allow. Conserva otros ajustes y ~/.engram. Reinicia Claude."
+        },
+        "codex": {
+          "manual": "Retira engram@engram con el gestor de plugins de Codex. En CODEX_HOME (o ~/.codex), elimina solo [mcp_servers.engram], engram-instructions.md y engram-compact-prompt.md. Conserva otros ajustes y ~/.engram. Reinicia Codex."
+        },
+        "opencode": {
+          "manual": "Retira ~/.config/opencode/plugins/engram.ts y solo la entrada mcp.engram de la configuración global. Quita opencode-subagent-statusline de tui.json/tui.jsonc únicamente si lo añadió este setup y no lo usas aparte. Conserva otros ajustes y ~/.engram. Reinicia OpenCode."
+        }
+      }
+    },
+    {
+      "name": "gentle-shell",
+      "install": {
+        "argv": [
+          "npm",
+          "install",
+          "--global",
+          "gentle-pi",
+          "--allow-scripts=gentle-pi,esbuild,protobufjs,@google/genai"
+        ]
+      },
+      "update": {
+        "argv": [
+          "npm",
+          "install",
+          "--global",
+          "gentle-pi@latest",
+          "--allow-scripts=gentle-pi,esbuild,protobufjs,@google/genai"
+        ]
+      },
+      "uninstall": {
+        "argv": [
+          "npm",
+          "uninstall",
+          "--global",
+          "gentle-pi"
+        ]
+      },
+      "version": {
+        "argv": [
+          "gentle-shell",
+          "--version"
+        ],
+        "pattern": "^gentle-shell\\s+(\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)"
+      },
+      "platform": "linux",
+      "homepage": "https://github.com/Gentleman-Programming/gentle-shell",
+      "latest": {
+        "npm": "gentle-pi"
+      }
+    }
+  ],
+  "packages": [
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/iseoane/isSWF"
+      },
+      "version": {
+        "policy": "latest"
+      },
+      "host": "claude",
+      "marketplaceRoot": "",
+      "pluginName": "isswf"
+    },
+    {
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/iseoane/isSWF"
+      },
+      "version": {
+        "policy": "latest"
+      },
+      "host": "pi",
+      "root": ""
+    }
+  ],
+  "replicas": [
+    {
+      "kind": "package",
+      "selection": {
+        "source": {
+          "kind": "external",
+          "url": "https://github.com/iseoane/isSWF"
+        },
+        "version": {
+          "policy": "latest"
+        },
+        "host": "claude",
+        "marketplaceRoot": "",
+        "pluginName": "isswf"
+      }
+    },
+    {
+      "kind": "package",
+      "selection": {
+        "source": {
+          "kind": "external",
+          "url": "https://github.com/iseoane/isSWF"
+        },
+        "version": {
+          "policy": "latest"
+        },
+        "host": "pi",
+        "root": ""
+      }
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "agent-depot-apprecipe"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "doctor-md-agents"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "builtin",
+        "id": "builtin:agent-depot"
+      },
+      "path": "doctor-md-skill"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/cloudflare/security-audit-skill"
+      },
+      "path": "skills/security-audit"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": ".agents/skills/archify-review"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": ".agents/skills/archify-tuning"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": ".agents/skills/simplify-codebase"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": ".agents/skills/test-value"
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "kind": "external",
+        "url": "https://github.com/tt-a1i/archify"
+      },
+      "path": "archify"
+    }
+  ]
+}
