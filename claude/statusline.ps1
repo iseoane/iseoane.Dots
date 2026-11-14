@@ -67,6 +67,7 @@ $rhost  = $json.workspace.repo.host
 $rowner = $json.workspace.repo.owner
 $rname  = $json.workspace.repo.name
 if ($rhost -and $rowner -and $rname) { $repoUrl = "https://$rhost/$rowner/$rname" }
+if ($rowner -and $rname) { $proj = "$rowner@$rname" }   # owner@repo si hay remoto
 $projDisp = Link $proj $repoUrl     # nombre de proyecto como enlace al repo
 
 $branch = ""

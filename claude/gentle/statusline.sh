@@ -58,6 +58,7 @@ ROWNER=$(echo "$input" | jq -r '.workspace.repo.owner // empty')
 RNAME=$(echo "$input"  | jq -r '.workspace.repo.name // empty')
 REPO_URL=""
 [ -n "$RHOST" ] && [ -n "$ROWNER" ] && [ -n "$RNAME" ] && REPO_URL="https://${RHOST}/${ROWNER}/${RNAME}"
+[ -n "$ROWNER" ] && [ -n "$RNAME" ] && PROJ="$ROWNER@$RNAME"   # owner@repo si hay remoto
 PROJ_DISP=$(link "$PROJ" "$REPO_URL")   # nombre de proyecto como enlace al repo
 
 BRANCH=""
