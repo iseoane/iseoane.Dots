@@ -147,7 +147,7 @@ if has_windows_mount; then
   else
     echo "  skip: windows .claude/settings.json not found"
   fi
-  for f in statusline.ps1 subagent-statusline.ps1; do
+  for f in statusline.ps1; do
     if [ -f "$WIN_HOME/.claude/$f" ]; then
       cp "$WIN_HOME/.claude/$f" "$REPO_ROOT/claude/$f"
     else

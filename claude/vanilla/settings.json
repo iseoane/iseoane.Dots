@@ -59,10 +59,6 @@
     "padding": 0,
     "refreshInterval": 30
   },
-  "subagentStatusLine": {
-    "type": "command",
-    "command": "STATUSLINE_THEME=xeo-gta $HOME/.claude/subagent-statusline.sh"
-  },
   "theme": "custom:xeo-gta",
   "editorMode": "normal",
   "tui": "fullscreen",

@@ -281,8 +281,6 @@ if has_windows_mount; then
     copy "$REPO_ROOT/claude/settings.windows.json" "$WIN_HOME/.claude/settings.json"
     backup_if_needed "$WIN_HOME/.claude/statusline.ps1"
     copy "$REPO_ROOT/claude/statusline.ps1" "$WIN_HOME/.claude/statusline.ps1"
-    backup_if_needed "$WIN_HOME/.claude/subagent-statusline.ps1"
-    copy "$REPO_ROOT/claude/subagent-statusline.ps1" "$WIN_HOME/.claude/subagent-statusline.ps1"
   else
     echo "== claude (windows side): skipped (not requested) =="
   fi

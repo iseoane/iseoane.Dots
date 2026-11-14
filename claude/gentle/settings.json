@@ -78,10 +78,6 @@
     "padding": 0,
     "refreshInterval": 30
   },
-  "subagentStatusLine": {
-    "type": "command",
-    "command": "~/.claude/subagent-statusline.sh"
-  },
   "editorMode": "normal",
   "tui": "fullscreen",
   "worktree": {

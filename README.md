@@ -96,7 +96,7 @@ claude/gentle/, claude/vanilla/
                            -> merged by claude/manage.mjs into ~/.claude
                               (gentle-ai) and ~/.claude-vanilla (plain)
 claude/settings.windows.json,
-statusline.ps1, subagent-statusline.ps1
+statusline.ps1
                            -> copied into Windows .claude/ (via /mnt/c);
                               settings.windows.json lands as settings.json
 gentle-shell/settings.json -> merged into ~/.gentle-shell/agent/settings.json
@@ -138,7 +138,7 @@ machine-local overrides per Claude Code convention.
     injected sections stay intact.
   - `output-styles/`: only styles whose frontmatter `meta` has
     `owner: iseoane`.
-  - gentle also ships `statusline.sh`, `subagent-statusline.sh` and
+  - gentle also ships `statusline.sh` and
     `hooks/herdr-agent-state.sh` (made executable on apply).
   Windows keeps its own copied `claude/settings.windows.json` and pwsh
   statuslines.

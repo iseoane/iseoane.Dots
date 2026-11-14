@@ -22,7 +22,6 @@ export const settingsKeys = [
   "effortLevel",
   "language",
   "statusLine",
-  "subagentStatusLine",
   "theme",
   "editorMode",
   "tui",
@@ -48,7 +47,7 @@ const profiles = {
   gentle: {
     defaultTarget: join(homedir(), ".claude"),
     claudeMd: "block",
-    scripts: ["statusline.sh", "subagent-statusline.sh", "hooks/herdr-agent-state.sh"],
+    scripts: ["statusline.sh", "hooks/herdr-agent-state.sh"],
     themes: [],
   },
   vanilla: {

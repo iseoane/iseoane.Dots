@@ -349,10 +349,6 @@
     "refreshInterval": 30,
     "type": "command"
   },
-  "subagentStatusLine": {
-    "command": "pwsh -NoProfile -File C:/Users/iseoane/.claude/subagent-statusline.ps1 -Theme xeo-gta",
-    "type": "command"
-  },
   "theme": "custom:xeo-gta",
   "tui": "fullscreen",
   "voice": {
