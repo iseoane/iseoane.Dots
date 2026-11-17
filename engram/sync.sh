@@ -19,8 +19,20 @@ HOST="$(hostname -s 2>/dev/null || echo desconocido)"
 # ── Helpers ──────────────────────────────────────────────────────────────────
 log() { printf '%s [%s] %s\n' "$(date '+%F %T')" "$HOST" "$*" >> "$LOG_FILE"; }
 
+# Con --notify, pinta una linea de resumen en la terminal real (/dev/tty).
+# Pensado para el hook SessionEnd: Claude Code captura stdout/stderr y no
+# muestra la salida al cerrarse. Nunca falla.
+NOTIFY=0; WARNINGS=0; LAST_WARNING=""
+show_result() {
+  (( NOTIFY )) || return 0
+  local color=33
+  case "$1" in OK) color=32 ;; KO) color=31 ;; esac
+  { printf '[%sm● engram %s %s[0m — %s
+' "$color" "$CMD" "$1" "$2" > /dev/tty; } 2>/dev/null || true
+}
+
 # Registra el problema pero NUNCA rompe la sesión de Claude Code (sale con 0).
-die_soft() { log "WARN: $*"; exit 0; }
+die_soft() { log "WARN: $*"; show_result KO "$*"; exit 0; }
 
 # Poda el log a los últimos N días (las líneas empiezan por 'YYYY-MM-DD ', que
 # ordena lexicográficamente = cronológicamente). El bloque de rotación anterior
@@ -79,7 +91,53 @@ for path in glob.glob(os.path.join(chunks_dir, "*.jsonl.gz")):
 PY
 }
 
+# Ejecuta engram y vuelca su salida de error al log. Antes se descartaba con
+# 2>/dev/null y el log solo decia "devolvio error", sin la causa real.
+run_engram() {
+  local out rc
+  out="$("$ENGRAM_BIN" "$@" 2>&1)"; rc=$?
+  if (( rc != 0 )); then
+    LAST_WARNING="engram $*: $(printf '%s' "$out" | tail -n 3 | tr '
+' ' ')"
+    log "WARN: engram $* devolvio error (rc=$rc): $LAST_WARNING"
+    (( WARNINGS++ )) || true
+  fi
+  return $rc
+}
+
+# Un merge o rebase que quedo a medias (proceso cortado, hook interrumpido)
+# deja MERGE_HEAD y marcadores de conflicto en el working tree. Si el
+# siguiente commit_if_changes hace 'git add -A', cierra ese merge con los
+# marcadores dentro y rompe manifest.json para todas las maquinas. Por eso se
+# aborta cualquier operacion pendiente antes de tocar el repo.
+recover_git_state() {
+  local gitdir
+  gitdir="$(git rev-parse --git-dir 2>/dev/null)" || return 0
+  if [[ -f "$gitdir/MERGE_HEAD" ]]; then
+    git merge --abort >/dev/null 2>&1 || git reset -q --merge >/dev/null 2>&1
+    log "WARN: merge a medias detectado y abortado."
+  fi
+  if [[ -d "$gitdir/rebase-merge" || -d "$gitdir/rebase-apply" ]]; then
+    git rebase --abort >/dev/null 2>&1 || true
+    log "WARN: rebase a medias detectado y abortado."
+  fi
+  return 0
+}
+
+# manifest.json debe ser JSON valido sin marcadores de conflicto; si no, ni
+# engram puede exportar ni se debe commitear nada encima.
+manifest_ok() {
+  local manifest=".engram/manifest.json"
+  [[ -f "$manifest" ]] || return 0
+  if grep -qE '^(<<<<<<<|=======|>>>>>>>)' "$manifest"; then return 1; fi
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import json,sys; json.load(open(sys.argv[1], encoding="utf-8"))' "$manifest" >/dev/null 2>&1 || return 1
+  fi
+  return 0
+}
+
 commit_if_changes() {
+  manifest_ok || die_soft "manifest.json invalido (marcadores de conflicto o JSON roto); no commiteo. Requiere reparacion manual."
   git add -A
   if git diff --cached --quiet; then
     log "Sin chunks nuevos que commitear."
@@ -154,20 +212,24 @@ PY
 # ── Acciones ──────────────────────────────────────────────────────────────────
 do_pull() {
   ensure_repo
+  recover_git_state
   rebase_remote
   case $? in
-    1) log "Pull pospuesto (red transitoria); se reintenta en el proximo sync."; exit 0 ;;
+    1) log "Pull pospuesto (red transitoria); se reintenta en el proximo sync."; show_result PENDIENTE "sin red; se reintenta en el proximo sync"; exit 0 ;;
     2) die_soft "conflicto de rebase REAL en pull; requiere revision manual" ;;
   esac
   # Importa a la BD local los chunks que aun no esten importados.
-  "$ENGRAM_BIN" sync --import >/dev/null 2>&1 && log "Import OK." || log "WARN: engram sync --import devolvio error"
+  run_engram sync --import && log "Import OK."
   log "Pull OK."
+  if (( WARNINGS )); then show_result KO "$LAST_WARNING"; else show_result OK "memorias importadas"; fi
 }
 
 do_push() {
   ensure_repo
+  recover_git_state
+  manifest_ok || die_soft "manifest.json invalido (marcadores de conflicto o JSON roto); requiere reparacion manual."
   # Exporta las memorias nuevas de la BD local a .engram/chunks + manifest.json.
-  "$ENGRAM_BIN" sync --all >/dev/null 2>&1 || log "WARN: engram sync --all devolvio error"
+  run_engram sync --all
   # Quita el grafo de relaciones de los chunks recién exportados (ver arriba).
   strip_relations
   commit_if_changes
@@ -175,13 +237,14 @@ do_push() {
   while (( attempt <= MAX_PUSH_RETRIES )); do
     rebase_remote
     case $? in
-      1) log "Push pospuesto (red transitoria, intento $attempt); commit local intacto, se reintenta en el proximo sync."; exit 0 ;;
+      1) log "Push pospuesto (red transitoria, intento $attempt); commit local intacto, se reintenta en el proximo sync."; show_result PENDIENTE "sin red; commit local guardado, se sube en el proximo sync"; exit 0 ;;
       2) die_soft "conflicto de rebase REAL en push; commit local intacto, requiere revision manual" ;;
     esac
     # Importa lo que haya traido el rebase de la otra maquina (idempotente).
-    "$ENGRAM_BIN" sync --import >/dev/null 2>&1 || true
+    run_engram sync --import || true
     if git -c http.version=HTTP/1.1 push -q origin "$BRANCH"; then
       log "Push OK (intento $attempt)."
+      if (( WARNINGS )); then show_result KO "push hecho, pero $LAST_WARNING"; else show_result OK "memorias subidas"; fi
       return 0
     fi
     log "Push rechazado (intento $attempt) reintento tras rebase."
@@ -192,6 +255,7 @@ do_push() {
 
 # ── Lock + dispatch ───────────────────────────────────────────────────────────
 CMD="${1:-}"
+[[ "${2:-}" == "--notify" ]] && NOTIFY=1
 mkdir -p "$(dirname "$LOCK_FILE")" "$(dirname "$LOG_FILE")"
 prune_log
 
@@ -199,6 +263,7 @@ prune_log
 exec 9>"$LOCK_FILE"
 if ! flock -w 20 9; then
   log "Sync ocupado >20s, omito ($CMD)."
+  show_result PENDIENTE "otro sync en curso; se omite"
   exit 0
 fi
 

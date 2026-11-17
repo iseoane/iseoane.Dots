@@ -7,7 +7,10 @@
 param(
   [Parameter(Position = 0)]
   [ValidateSet('pull', 'push')]
-  [string]$Cmd
+  [string]$Cmd,
+  # Escribe el resultado final directamente en la consola (CONOUT$). Pensado
+  # para el hook SessionEnd: Claude Code no muestra su salida al cerrarse.
+  [switch]$Notify
 )
 
 $ErrorActionPreference = 'Stop'
@@ -50,9 +53,25 @@ function Prune-Log {
   Set-Content -Path $LogFile -Value $kept
 }
 
+# Con -Notify, pinta una línea de resumen en la consola real. Se escribe en
+# CONOUT$ y no en stdout/stderr porque Claude Code captura ambos. Nunca falla.
+$script:Warnings = 0
+function Show-Result([string]$State, [string]$Msg) {
+  if (-not $Notify) { return }
+  $color = switch ($State) { 'OK' { '32' } 'KO' { '31' } default { '33' } }
+  $line = "`e[${color}m● engram $Cmd ${State}`e[0m — $Msg"
+  try {
+    $fs = [IO.File]::Open('CONOUT$', [IO.FileMode]::Open, [IO.FileAccess]::Write)
+    $w = [IO.StreamWriter]::new($fs, [Text.UTF8Encoding]::new($false))
+    $w.WriteLine($line); $w.Dispose()
+  }
+  catch { }
+}
+
 # Registra el problema pero NUNCA rompe la sesión de Claude Code (sale con 0).
 function Die-Soft([string]$Msg) {
   Write-Log "WARN: $Msg"
+  Show-Result 'KO' $Msg
   if ($script:Lock) { $script:Lock.Dispose() }
   exit 0
 }
@@ -66,7 +85,54 @@ function Ensure-Repo {
   if ($LASTEXITCODE -ne 0) { Die-Soft "no es un repo git: $RepoDir" }
 }
 
+# Ejecuta engram y vuelca su salida de error al log. Antes se descartaba con
+# 2>$null y el log solo decía "devolvió error", sin la causa real.
+function Invoke-Engram {
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { $out = & $EngramBin @args 2>&1 | ForEach-Object { "$_" } }
+  finally { $ErrorActionPreference = $prev }
+  $rc = $LASTEXITCODE
+  if ($rc -ne 0) {
+    $tail = (@($out) | Select-Object -Last 3) -join ' '
+    Write-Log "WARN: engram $($args -join ' ') devolvió error (rc=$rc): $tail"
+    $script:Warnings++
+    $script:LastWarning = "engram $($args -join ' '): $tail"
+  }
+  return ($rc -eq 0)
+}
+
+# Un merge o rebase que quedó a medias (proceso cortado, hook interrumpido)
+# deja MERGE_HEAD y marcadores de conflicto en el working tree. Si el
+# siguiente Commit-IfChanges hace 'git add -A', cierra ese merge con los
+# marcadores dentro y rompe manifest.json para todas las máquinas. Por eso se
+# aborta cualquier operación pendiente antes de tocar el repo.
+function Recover-GitState {
+  $gitDir = (& git rev-parse --git-dir 2>$null)
+  if ($LASTEXITCODE -ne 0 -or -not $gitDir) { return }
+  if (Test-Path (Join-Path $gitDir 'MERGE_HEAD')) {
+    & git merge --abort *>$null
+    if ($LASTEXITCODE -ne 0) { & git reset -q --merge *>$null }
+    Write-Log 'WARN: merge a medias detectado y abortado.'
+  }
+  if ((Test-Path (Join-Path $gitDir 'rebase-merge')) -or (Test-Path (Join-Path $gitDir 'rebase-apply'))) {
+    & git rebase --abort *>$null
+    Write-Log 'WARN: rebase a medias detectado y abortado.'
+  }
+}
+
+# manifest.json debe ser JSON válido sin marcadores de conflicto; si no, ni
+# engram puede exportar ni se debe commitear nada encima.
+function Test-Manifest {
+  $manifest = '.engram/manifest.json'
+  if (-not (Test-Path $manifest)) { return $true }
+  $raw = [IO.File]::ReadAllText((Join-Path (Get-Location) $manifest))
+  if ($raw -match '(?m)^(<<<<<<<|=======|>>>>>>>)') { return $false }
+  try { $null = $raw | ConvertFrom-Json; return $true } catch { return $false }
+}
+
 function Commit-IfChanges {
+  if (-not (Test-Manifest)) { Die-Soft 'manifest.json inválido (marcadores de conflicto o JSON roto); no commiteo. Requiere reparación manual.' }
   & git add -A
   & git diff --cached --quiet
   if ($LASTEXITCODE -eq 0) {
@@ -177,32 +243,37 @@ function Merge-Manifest {
 # ── Acciones ──────────────────────────────────────────────────────────────────
 function Do-Pull {
   Ensure-Repo
+  Recover-GitState
   switch (Rebase-Remote) {
-    1 { Write-Log 'Pull pospuesto (red transitoria); se reintenta en el próximo sync.'; return }
+    1 { Write-Log 'Pull pospuesto (red transitoria); se reintenta en el próximo sync.'; Show-Result 'PENDIENTE' 'sin red; se reintenta en el próximo sync'; return }
     2 { Die-Soft 'conflicto de rebase REAL en pull; requiere revisión manual' }
   }
-  & $EngramBin sync --import 2>$null
-  if ($LASTEXITCODE -eq 0) { Write-Log 'Import OK.' }
-  else { Write-Log 'WARN: engram sync --import devolvió error' }
+  if (Invoke-Engram sync --import) { Write-Log 'Import OK.' }
   Write-Log 'Pull OK.'
+  if ($script:Warnings) { Show-Result 'KO' $script:LastWarning } else { Show-Result 'OK' 'memorias importadas' }
 }
 
 function Do-Push {
   Ensure-Repo
-  & $EngramBin sync --all 2>$null
-  if ($LASTEXITCODE -ne 0) { Write-Log 'WARN: engram sync --all devolvió error' }
+  Recover-GitState
+  if (-not (Test-Manifest)) { Die-Soft 'manifest.json inválido (marcadores de conflicto o JSON roto); requiere reparación manual.' }
+  $null = Invoke-Engram sync --all
   # Quita el grafo de relaciones de los chunks recién exportados (ver arriba).
   Strip-Relations
   Commit-IfChanges
   for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
     switch (Rebase-Remote) {
-      1 { Write-Log "Push pospuesto (red transitoria, intento $attempt); commit local intacto, se reintenta en el próximo sync."; return }
+      1 { Write-Log "Push pospuesto (red transitoria, intento $attempt); commit local intacto, se reintenta en el próximo sync."; Show-Result 'PENDIENTE' 'sin red; commit local guardado, se sube en el próximo sync'; return }
       2 { Die-Soft 'conflicto de rebase REAL en push; commit local intacto, requiere revisión manual' }
     }
     # Importa lo que haya traído el rebase de la otra máquina (idempotente)
-    & $EngramBin sync --import 2>$null | Out-Null
+    $null = Invoke-Engram sync --import
     & git -c http.version=HTTP/1.1 push -q origin $Branch
-    if ($LASTEXITCODE -eq 0) { Write-Log "Push OK (intento $attempt)."; return }
+    if ($LASTEXITCODE -eq 0) {
+      Write-Log "Push OK (intento $attempt)."
+      if ($script:Warnings) { Show-Result 'KO' "push hecho, pero $($script:LastWarning)" } else { Show-Result 'OK' 'memorias subidas' }
+      return
+    }
     Write-Log "Push rechazado (intento $attempt) — reintento tras rebase."
   }
   Die-Soft "el push falló tras $MaxRetries intentos"
@@ -226,7 +297,7 @@ while ($true) {
     break
   }
   catch {
-    if ((Get-Date) -ge $deadline) { Write-Log "Sync ocupado >20s, omito ($Cmd)."; exit 0 }
+    if ((Get-Date) -ge $deadline) { Write-Log "Sync ocupado >20s, omito ($Cmd)."; Show-Result 'PENDIENTE' 'otro sync en curso; se omite'; exit 0 }
     Start-Sleep -Milliseconds 500
   }
 }
