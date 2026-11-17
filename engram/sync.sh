@@ -19,16 +19,18 @@ HOST="$(hostname -s 2>/dev/null || echo desconocido)"
 # ── Helpers ──────────────────────────────────────────────────────────────────
 log() { printf '%s [%s] %s\n' "$(date '+%F %T')" "$HOST" "$*" >> "$LOG_FILE"; }
 
-# Con --notify, pinta una linea de resumen en la terminal real (/dev/tty).
-# Pensado para el hook SessionEnd: Claude Code captura stdout/stderr y no
-# muestra la salida al cerrarse. Nunca falla.
-NOTIFY=0; WARNINGS=0; LAST_WARNING=""
+# Guarda el ultimo resultado en $STATUS_FILE (lo pinta la statusline) y, con
+# --hook, lo emite como systemMessage para Claude Code. Nunca falla.
+STATUS_FILE="${ENGRAM_STATUS:-$HOME/.engram/sync.status}"
+HOOK=0; WARNINGS=0; LAST_WARNING=""
 show_result() {
-  (( NOTIFY )) || return 0
-  local color=33
-  case "$1" in OK) color=32 ;; KO) color=31 ;; esac
-  { printf '[%sm● engram %s %s[0m — %s
-' "$color" "$CMD" "$1" "$2" > /dev/tty; } 2>/dev/null || true
+  local line="🧠 $CMD $1"
+  [[ "$1" != OK && -n "${2:-}" ]] && line="$line — $2"
+  printf '%s
+' "$line" > "$STATUS_FILE" 2>/dev/null || true
+  if (( HOOK )); then
+    jq -cn --arg m "$line" '{systemMessage: $m}' 2>/dev/null || true
+  fi
 }
 
 # Registra el problema pero NUNCA rompe la sesión de Claude Code (sale con 0).
@@ -255,7 +257,19 @@ do_push() {
 
 # ── Lock + dispatch ───────────────────────────────────────────────────────────
 CMD="${1:-}"
-[[ "${2:-}" == "--notify" ]] && NOTIFY=1
+DETACH=0
+for arg in "${@:2}"; do
+  case "$arg" in
+    --hook) HOOK=1 ;;
+    # Claude Code solo concede ~1,5 s a los hooks SessionEnd: relanza el sync
+    # desacoplado de la sesion y sale enseguida.
+    --detach) DETACH=1 ;;
+  esac
+done
+if (( DETACH )); then
+  nohup setsid "$0" "$CMD" >/dev/null 2>&1 < /dev/null &
+  exit 0
+fi
 mkdir -p "$(dirname "$LOCK_FILE")" "$(dirname "$LOG_FILE")"
 prune_log
 

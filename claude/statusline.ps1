@@ -149,5 +149,15 @@ if ($diff)  { $line2 += $SEP + $diff }
 if ($five)  { $line2 += $SEP + $five }
 if ($seven) { $line2 += $SEP + $seven }
 
+# ── Último resultado del sync de Engram (lo escribe engram/sync.ps1) ────────
+$syncFile = Join-Path $HOME '.engram\sync.status'
+if (Test-Path $syncFile) {
+    $sync = (Get-Content -Path $syncFile -Raw -Encoding UTF8).Trim()
+    if ($sync) {
+        $sc = if ($sync -match ' OK$') { $GREEN } elseif ($sync -match ' KO') { $RED } else { $YELLOW }
+        $line2 += $SEP + $sc + $sync + $RESET
+    }
+}
+
 Write-Output $line1
 Write-Output $line2

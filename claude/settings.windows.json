@@ -124,7 +124,7 @@
       {
         "hooks": [
           {
-            "command": "pwsh -NoProfile -File C:/Users/iseoane/.engram-sync/sync.ps1 push -Notify",
+            "command": "pwsh -NoProfile -File C:/Users/iseoane/.engram-sync/sync.ps1 push -Detach",
             "timeout": 120,
             "type": "command"
           }
@@ -135,7 +135,7 @@
       {
         "hooks": [
           {
-            "command": "pwsh -NoProfile -File C:/Users/iseoane/.engram-sync/sync.ps1 pull",
+            "command": "pwsh -NoProfile -File C:/Users/iseoane/.engram-sync/sync.ps1 pull -Hook",
             "timeout": 120,
             "type": "command"
           }

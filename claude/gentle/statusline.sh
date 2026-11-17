@@ -137,5 +137,17 @@ LINE2="${CTX}"
 [ -n "$FIVE_STR" ]  && LINE2="${LINE2}${SEP}${FIVE_STR}"
 [ -n "$SEVEN_STR" ] && LINE2="${LINE2}${SEP}${SEVEN_STR}"
 
+# Ultimo resultado del sync de Engram (lo escribe engram/sync.sh)
+SYNC_FILE="$HOME/.engram/sync.status"
+if [ -s "$SYNC_FILE" ]; then
+  SYNC=$(head -n1 "$SYNC_FILE")
+  case "$SYNC" in
+    *" OK") SC="$GREEN" ;;
+    *" KO"*) SC="$RED" ;;
+    *) SC="$YELLOW" ;;
+  esac
+  LINE2="${LINE2}${SEP}${SC}${SYNC}${RESET}"
+fi
+
 printf '%s\n' "$LINE1"
 printf '%s\n' "$LINE2"

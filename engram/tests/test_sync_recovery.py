@@ -97,6 +97,7 @@ class SyncRecoveryMixin:
                    ENGRAM_BIN=str(self.fake_engram),
                    ENGRAM_LOCK=str(self.tmp / 'sync.lock'),
                    ENGRAM_LOG=str(self.log),
+                   ENGRAM_STATUS=str(self.log.with_name("sync.status")),
                    ENGRAM_FETCH_RETRIES='1')
         env.update(extra_env or {})
         if self.runner == 'ps1':

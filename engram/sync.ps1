@@ -3,14 +3,18 @@
 # Usa el git-sync nativo de Engram (chunks append-only), NO la base de datos en crudo.
 # Uso:  pwsh -NoProfile -File sync.ps1 pull   (SessionStart)
 #       pwsh -NoProfile -File sync.ps1 push   (Stop / SessionEnd)
+#       -Detach  relanza el sync en segundo plano y sale al instante (SessionEnd)
+#       -Hook    emite el resultado como systemMessage JSON para Claude Code
 
 param(
   [Parameter(Position = 0)]
   [ValidateSet('pull', 'push')]
   [string]$Cmd,
-  # Escribe el resultado final directamente en la consola (CONOUT$). Pensado
-  # para el hook SessionEnd: Claude Code no muestra su salida al cerrarse.
-  [switch]$Notify
+  # Relanza el sync como proceso oculto e independiente y sale enseguida.
+  # Claude Code solo concede ~1,5 s a los hooks SessionEnd y cancela el resto.
+  [switch]$Detach,
+  # Emite el resultado como {"systemMessage": ...} para que Claude lo muestre.
+  [switch]$Hook
 )
 
 $ErrorActionPreference = 'Stop'
@@ -27,6 +31,7 @@ $Branch     = Get-EnvOr 'ENGRAM_BRANCH'   'main'
 $EngramBin  = Get-EnvOr 'ENGRAM_BIN'      'engram'    # ruta absoluta si no está en el PATH del hook
 $LockFile   = Get-EnvOr 'ENGRAM_LOCK'     (Join-Path $HOME '.engram-sync\.sync.lock')
 $LogFile    = Get-EnvOr 'ENGRAM_LOG'      (Join-Path $HOME '.engram\sync.log')
+$StatusFile = Get-EnvOr 'ENGRAM_STATUS'   (Join-Path $HOME '.engram\sync.status')
 $MaxRetries = [int](Get-EnvOr 'ENGRAM_PUSH_RETRIES' '3')
 $LogRetentionDays = [int](Get-EnvOr 'ENGRAM_LOG_RETENTION_DAYS' '30')
 $HostTag    = try { hostname } catch { 'desconocido' }
@@ -53,19 +58,18 @@ function Prune-Log {
   Set-Content -Path $LogFile -Value $kept
 }
 
-# Con -Notify, pinta una línea de resumen en la consola real. Se escribe en
-# CONOUT$ y no en stdout/stderr porque Claude Code captura ambos. Nunca falla.
+# Guarda el último resultado en $StatusFile (lo pinta la statusline) y, con
+# -Hook, lo emite como systemMessage para Claude Code. Nunca falla.
 $script:Warnings = 0
 function Show-Result([string]$State, [string]$Msg) {
-  if (-not $Notify) { return }
-  $color = switch ($State) { 'OK' { '32' } 'KO' { '31' } default { '33' } }
-  $line = "`e[${color}m● engram $Cmd ${State}`e[0m — $Msg"
-  try {
-    $fs = [IO.File]::Open('CONOUT$', [IO.FileMode]::Open, [IO.FileAccess]::Write)
-    $w = [IO.StreamWriter]::new($fs, [Text.UTF8Encoding]::new($false))
-    $w.WriteLine($line); $w.Dispose()
+  $brain = [char]::ConvertFromUtf32(0x1F9E0)
+  $line = "$brain $Cmd $State"
+  if ($State -ne 'OK' -and $Msg) { $line += " — $Msg" }
+  try { [IO.File]::WriteAllText($StatusFile, "$line`n", [Text.UTF8Encoding]::new($false)) } catch { }
+  if ($Hook) {
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    @{ systemMessage = $line } | ConvertTo-Json -Compress | Write-Output
   }
-  catch { }
 }
 
 # Registra el problema pero NUNCA rompe la sesión de Claude Code (sale con 0).
@@ -280,7 +284,13 @@ function Do-Push {
 }
 
 # ── Lock + dispatch ───────────────────────────────────────────────────────────
-if (-not $Cmd) { Write-Error 'uso: sync.ps1 {pull|push}'; exit 2 }
+if (-not $Cmd) { Write-Error 'uso: sync.ps1 {pull|push} [-Detach] [-Hook]'; exit 2 }
+
+if ($Detach) {
+  $pwsh = (Get-Process -Id $PID).Path
+  Start-Process -FilePath $pwsh -WindowStyle Hidden -ArgumentList @('-NoProfile', '-File', "`"$PSCommandPath`"", $Cmd)
+  exit 0
+}
 
 New-Item -ItemType Directory -Force -Path (Split-Path $LockFile) | Out-Null
 New-Item -ItemType Directory -Force -Path (Split-Path $LogFile)  | Out-Null

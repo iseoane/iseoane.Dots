@@ -153,7 +153,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.engram-sync/sync.sh push --notify",
+            "command": "$HOME/.engram-sync/sync.sh push --detach",
             "timeout": 30,
             "async": true
           }
@@ -166,7 +166,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.engram-sync/sync.sh pull",
+            "command": "$HOME/.engram-sync/sync.sh pull --hook",
             "timeout": 30
           }
         ]
